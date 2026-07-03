@@ -1,0 +1,36 @@
+name: triage
+description: A native Mac & Windows app for triaging Jira tickets by status and priority.
+publish_to: 'none'
+version: 1.1.0+2
+
+environment:
+  sdk: '>=3.3.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  http: ^1.2.0                      # Jira REST API + optional AI calls
+  flutter_secure_storage: ^9.2.2   # Keychain (Mac) / Credential Locker (Windows)
+  shared_preferences: ^2.2.3       # Settings, lists, time logs, cache
+  local_notifier: ^0.1.6           # Native Mac & Windows notifications
+  url_launcher: ^6.2.6             # Open tickets in the browser
+  intl: ^0.19.0                    # Date / business-day math
+  provider: ^6.1.2                 # State management
+  speech_to_text: ^6.6.2           # Jarvis: native speech recognition
+  flutter_tts: ^4.0.2              # Jarvis: text-to-speech (British voice)
+
+dev_dependencies:
+  flutter_lints: ^4.0.0
+  msix: ^3.16.7                    # Builds a double-click Windows installer (.msix)
+
+flutter:
+  uses-material-design: true
+
+# Windows installer settings (used by: dart run msix:create)
+msix_config:
+  display_name: Triage
+  publisher_display_name: Triage
+  identity_name: com.triage.app
+  msix_version: 1.1.0.0
+  capabilities: internetClient,microphone
+  install_certificate: false
