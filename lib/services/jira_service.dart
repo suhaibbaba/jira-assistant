@@ -34,7 +34,7 @@ class JiraService {
   /// Fetch issues for a given JQL. Returns a typed result instead of throwing,
   /// so the UI can keep showing cached data on failure.
   Future<SyncResult> search(String jql, {int maxResults = 100}) async {
-    final uri = Uri.https(creds.cleanDomain, '/rest/api/3/search', {
+    final uri = Uri.https(creds.cleanDomain, '/rest/api/3/search/jql', {
       'jql': jql,
       'maxResults': '$maxResults',
       'fields': _fields,

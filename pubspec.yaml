@@ -10,13 +10,13 @@ dependencies:
   flutter:
     sdk: flutter
   http: ^1.2.0                      # Jira REST API + optional AI calls
-  flutter_secure_storage: ^9.2.2   # Keychain (Mac) / Credential Locker (Windows)
+  flutter_secure_storage: ^10.3.1   # Keychain (Mac) / Credential Locker (Windows)
   shared_preferences: ^2.2.3       # Settings, lists, time logs, cache
   local_notifier: ^0.1.6           # Native Mac & Windows notifications
   url_launcher: ^6.2.6             # Open tickets in the browser
   intl: ^0.19.0                    # Date / business-day math
   provider: ^6.1.2                 # State management
-  speech_to_text: ^6.6.2           # Jarvis: native speech recognition
+  speech_to_text: ^7.4.0           # Jarvis: native speech recognition
   flutter_tts: ^4.0.2              # Jarvis: text-to-speech (British voice)
 
 dev_dependencies:

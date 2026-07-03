@@ -5,3 +5,13 @@ build/
 .flutter-plugins-dependencies
 *.iml
 .idea/
+android
+ios
+windows
+linux
+macos
+web
+test
+.DS_Store
+.metadata
+pubspec.lock
