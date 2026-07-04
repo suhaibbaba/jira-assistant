@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../state/app_state.dart';
-import '../models/settings.dart';
-import '../theme/app_theme.dart';
+import 'package:triage/state/app_state.dart';
+import 'package:triage/models/settings.dart';
+import 'package:triage/theme/app_theme.dart';
+import 'package:triage/widgets/ui/ui.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -13,6 +14,27 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   final _name = TextEditingController();
   final _email = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    // Rebuild when text changes so the Add button enables/disables live.
+    _name.addListener(() => setState(() {}));
+    _email.addListener(() => setState(() {}));
+  }
+
+  @override
+  void dispose() {
+    _name.dispose();
+    _email.dispose();
+    super.dispose();
+  }
+
+  /// Add is enabled only when both fields have content.
+  /// (Stricter option: replace the email check with
+  ///  RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+\$').hasMatch(_email.text.trim()))
+  bool get _canAddMember =>
+      _name.text.trim().isNotEmpty && _email.text.trim().isNotEmpty;
 
   @override
   Widget build(BuildContext context) {
@@ -127,10 +149,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ],
             ),
           ),
-          _switch(r.alertEnabled, (v) {
-            setState(() => r.alertEnabled = v);
-            app.saveSettings();
-          }),
+          AppToggle(
+              value: r.alertEnabled,
+              width: 32,
+              height: 19,
+              onChanged: (v) {
+                setState(() => r.alertEnabled = v);
+                app.saveSettings();
+              }),
           const SizedBox(width: 12),
           _stepper(
             r.alertEnabled ? '${r.thresholdDays}d' : '—',
@@ -160,11 +186,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               controller: _name,
               style: const TextStyle(fontSize: 12),
               decoration: const InputDecoration(
-                  hintText: 'Name',
-                  hintStyle:
-                      const TextStyle(fontSize: 12, color: AppColors.text3),
-                  isDense: true,
-                  border: InputBorder.none),
+                  hintText: 'Name', isDense: true, border: InputBorder.none),
             ),
           ),
           Expanded(
@@ -173,24 +195,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
               style: const TextStyle(fontSize: 12),
               decoration: const InputDecoration(
                   hintText: 'email@company.com',
-                  hintStyle:
-                      const TextStyle(fontSize: 12, color: AppColors.text3),
                   isDense: true,
                   border: InputBorder.none),
             ),
           ),
           GestureDetector(
-            onTap: () {
-              if (_name.text.trim().isEmpty || _email.text.trim().isEmpty)
-                return;
-              app.addTeamMember(_name.text.trim(), _email.text.trim());
-              _name.clear();
-              _email.clear();
-            },
+            onTap: !_canAddMember
+                ? null // disabled: 0.3 alpha + not-allowed cursor (AppButton)
+                : () {
+                    if (_name.text.trim().isEmpty || _email.text.trim().isEmpty)
+                      return;
+                    app.addTeamMember(_name.text.trim(), _email.text.trim());
+                    _name.clear();
+                    _email.clear();
+                  },
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                  color: AppColors.accent,
+                  color: !_canAddMember ? AppColors.accent.withValues(alpha: 0.3) :  AppColors.accent,
                   borderRadius: BorderRadius.circular(6)),
               child: const Text('+ Add',
                   style: TextStyle(
@@ -258,7 +280,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const Spacer(),
           Container(
             decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.05),
+                color: Colors.black.withValues(alpha: 0.05),
                 borderRadius: BorderRadius.circular(7)),
             padding: const EdgeInsets.all(2),
             child: Row(
@@ -276,7 +298,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         boxShadow: selected == i
                             ? [
                                 BoxShadow(
-                                    color: Colors.black.withOpacity(0.1),
+                                    color: Colors.black.withValues(alpha: 0.1),
                                     blurRadius: 2)
                               ]
                             : null,
@@ -305,31 +327,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
               bottom: BorderSide(color: AppColors.separator, width: 0.5)),
         ),
         child: child,
-      );
-
-  Widget _switch(bool value, ValueChanged<bool> onChanged) => GestureDetector(
-        onTap: () => onChanged(!value),
-        child: Container(
-          width: 32,
-          height: 19,
-          decoration: BoxDecoration(
-            color: value
-                ? AppColors.priority['Low']
-                : Colors.black.withOpacity(0.15),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: AnimatedAlign(
-            duration: const Duration(milliseconds: 120),
-            alignment: value ? Alignment.centerRight : Alignment.centerLeft,
-            child: Container(
-              margin: const EdgeInsets.all(2),
-              width: 15,
-              height: 15,
-              decoration: const BoxDecoration(
-                  color: Colors.white, shape: BoxShape.circle),
-            ),
-          ),
-        ),
       );
 
   Widget _stepper(String value,
@@ -364,7 +361,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         onTap: onTap,
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-          color: Colors.black.withOpacity(0.03),
+          color: Colors.black.withValues(alpha: 0.03),
           child: Text(s,
               style: const TextStyle(fontSize: 13, color: AppColors.text2)),
         ),

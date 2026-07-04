@@ -3,9 +3,10 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 
-import '../state/app_state.dart';
-import '../models/time_log.dart';
-import '../theme/app_theme.dart';
+import 'package:triage/state/app_state.dart';
+import 'package:triage/models/time_log.dart';
+import 'package:triage/theme/app_theme.dart';
+import 'package:triage/widgets/ui/ui.dart';
 
 class TimeScreen extends StatefulWidget {
   const TimeScreen({super.key});
@@ -62,9 +63,8 @@ class _TimeScreenState extends State<TimeScreen> {
                     child: DropdownButtonFormField<String>(
                       value: _ticketKey,
                       isExpanded: true,
-                      hint:
-                          const Text('Ticket', style: TextStyle(fontSize: 13)),
-                      decoration: _fieldDecoration('Ticket'),
+                      hint: const Text('Ticket', style: TextStyle(fontSize: 13)),
+                      decoration: appInputDecoration(label: 'Ticket'),
                       items: [
                         for (final k in ticketKeys)
                           DropdownMenuItem(
@@ -82,7 +82,7 @@ class _TimeScreenState extends State<TimeScreen> {
                       keyboardType:
                           const TextInputType.numberWithOptions(decimal: true),
                       style: const TextStyle(fontSize: 13),
-                      decoration: _fieldDecoration('Hours'),
+                      decoration: appInputDecoration(label: 'Hours'),
                     ),
                   ),
                 ]),
@@ -90,7 +90,7 @@ class _TimeScreenState extends State<TimeScreen> {
                 DropdownButtonFormField<WorkType>(
                   value: _type,
                   isExpanded: true,
-                  decoration: _fieldDecoration('Work type'),
+                  decoration: appInputDecoration(label: 'Work type'),
                   items: [
                     for (final w in WorkType.values)
                       DropdownMenuItem(
@@ -101,21 +101,14 @@ class _TimeScreenState extends State<TimeScreen> {
                   onChanged: (v) => setState(() => _type = v ?? WorkType.other),
                 ),
                 const SizedBox(height: 12),
-                SizedBox(
-                  width: double.infinity,
-                  child: FilledButton(
-                    onPressed: () => _addLog(app),
-                    child: const Text('Add entry'),
-                  ),
-                ),
+                AppButton(label: 'Add entry', onTap: () => _addLog(app)),
               ],
             ),
           ),
           const SizedBox(height: 20),
           Row(
             children: [
-              _label(
-                  "Today — ${DateFormat('EEE, MMM d').format(DateTime.now())}"),
+              _label("Today — ${DateFormat('EEE, MMM d').format(DateTime.now())}"),
               const Spacer(),
               Text('${_fmt(total)}h total',
                   style: const TextStyle(
@@ -168,8 +161,8 @@ class _TimeScreenState extends State<TimeScreen> {
               style: const TextStyle(fontSize: 12, color: AppColors.text2)),
           const Spacer(),
           Text('${_fmt(l.hours)}h',
-              style:
-                  const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+              style: const TextStyle(
+                  fontSize: 13, fontWeight: FontWeight.w600)),
           IconButton(
             icon: const Icon(Icons.close, size: 15, color: AppColors.text3),
             onPressed: () => app.tracker.remove(l).then((_) => setState(() {})),
@@ -218,16 +211,6 @@ class _TimeScreenState extends State<TimeScreen> {
       ),
     );
   }
-
-  InputDecoration _fieldDecoration(String hint) => InputDecoration(
-        labelText: hint,
-        labelStyle: const TextStyle(fontSize: 12, color: AppColors.text2),
-        hintStyle: const TextStyle(fontSize: 12, color: AppColors.text3),
-        isDense: true,
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-      );
 
   Widget _label(String s) => Padding(
         padding: const EdgeInsets.only(bottom: 8),

@@ -63,5 +63,9 @@ ThemeData buildAppTheme() {
     ),
     splashFactory: NoSplash.splashFactory,
     highlightColor: Colors.transparent,
+    inputDecorationTheme: const InputDecorationTheme(
+      hintStyle: TextStyle(color: AppColors.text3),
+      labelStyle: TextStyle(color: AppColors.text2),
+    ),
   );
 }

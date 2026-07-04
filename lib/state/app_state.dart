@@ -3,13 +3,13 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../models/ticket.dart';
-import '../models/settings.dart';
-import '../models/attention_item.dart';
-import '../models/time_log.dart';
-import '../services/jira_service.dart';
-import '../services/storage_service.dart';
-import '../services/notification_service.dart';
+import 'package:triage/models/ticket.dart';
+import 'package:triage/models/settings.dart';
+import 'package:triage/models/attention_item.dart';
+import 'package:triage/models/time_log.dart';
+import 'package:triage/services/jira_service.dart';
+import 'package:triage/services/storage_service.dart';
+import 'package:triage/services/notification_service.dart';
 
 enum ViewScope { mine, team }
 
@@ -37,6 +37,9 @@ class AppState extends ChangeNotifier {
   DateTime? lastSyncedAt;
   bool isSyncing = false;
 
+  /// User closed the "new tickets" banner. Re-shown when unseen tickets arrive.
+  bool newBannerDismissed = false;
+
   Timer? _pollTimer;
   Timer? _retryTimer;
   int _retryAttempt = 0;
@@ -54,7 +57,9 @@ class AppState extends ChangeNotifier {
     await tracker.load();
 
     final token = await _storage.readToken();
-    if (settings.domain.isNotEmpty && settings.email.isNotEmpty && token != null) {
+    if (settings.domain.isNotEmpty &&
+        settings.email.isNotEmpty &&
+        token != null) {
       _setCreds(JiraCredentials(
           domain: settings.domain, email: settings.email, token: token));
       conn = _tickets.isEmpty ? ConnState.unconfigured : ConnState.ok;
@@ -100,6 +105,7 @@ class AppState extends ChangeNotifier {
     conn = ConnState.unconfigured;
     statusMessage = null;
     lastSyncedAt = null;
+    newBannerDismissed = false;
     _pollTimer?.cancel();
     _retryTimer?.cancel();
     notifyListeners();
@@ -155,6 +161,11 @@ class AppState extends ChangeNotifier {
       NotificationService.newTicket(t.key, t.summary);
     }
 
+    // Any genuinely unseen ticket re-surfaces the dismissed banner.
+    if (fresh.any((t) => !_seenKeys.contains(t.key))) {
+      newBannerDismissed = false;
+    }
+
     // Merge: fresh tickets + any estimates not already present.
     final merged = [...fresh];
     for (final e in estimates) {
@@ -163,7 +174,8 @@ class AppState extends ChangeNotifier {
 
     _applyManualOrder(merged);
     _tickets = merged;
-    _seenKeys = fresh.map((t) => t.key).toSet()..addAll(estimates.map((e) => e.key));
+    _seenKeys = fresh.map((t) => t.key).toSet()
+      ..addAll(estimates.map((e) => e.key));
 
     conn = ConnState.ok;
     statusMessage = null;
@@ -240,7 +252,8 @@ class AppState extends ChangeNotifier {
     final map = <String, List<Ticket>>{};
     for (final t in _visibleTickets) {
       final bucket = t.isEstimateRequest ? 'Needs Attention' : t.status;
-      if (!t.isEstimateRequest && !settings.visibleStatuses.contains(t.status)) {
+      if (!t.isEstimateRequest &&
+          !settings.visibleStatuses.contains(t.status)) {
         continue;
       }
       map.putIfAbsent(bucket, () => []).add(t);
@@ -287,8 +300,7 @@ class AppState extends ChangeNotifier {
     return map;
   }
 
-  int get newTicketCount =>
-      groupedByStatus['New']?.length ?? 0;
+  int get newTicketCount => groupedByStatus['New']?.length ?? 0;
 
   // ─────────────────────────── actions ───────────────────────────
 
@@ -296,6 +308,12 @@ class AppState extends ChangeNotifier {
     scope = s;
     notifyListeners();
     sync();
+  }
+
+  /// Hide the "new tickets" banner until genuinely new tickets arrive.
+  void dismissNewBanner() {
+    newBannerDismissed = true;
+    notifyListeners();
   }
 
   void toggleStatusVisible(String status) {

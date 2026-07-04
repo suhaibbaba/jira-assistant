@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../models/ticket.dart';
-import '../theme/app_theme.dart';
+import 'package:triage/models/ticket.dart';
+import 'package:triage/theme/app_theme.dart';
 
 /// The detail popover shown when a card is tapped.
 class TicketDetailDialog extends StatelessWidget {
@@ -150,7 +150,7 @@ class TicketDetailDialog extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
       decoration: BoxDecoration(
-          color: c.withOpacity(0.12), borderRadius: BorderRadius.circular(7)),
+          color: c.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(7)),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [

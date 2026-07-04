@@ -1,8 +1,8 @@
 import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../models/settings.dart';
-import '../models/ticket.dart';
+import 'package:triage/models/settings.dart';
+import 'package:triage/models/ticket.dart';
 
 /// Wraps secure storage (token) + shared preferences (settings, order, cache).
 class StorageService {

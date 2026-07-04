@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../state/app_state.dart';
-import '../models/settings.dart';
-import '../theme/app_theme.dart';
+import 'package:triage/state/app_state.dart';
+import 'package:triage/models/settings.dart';
+import 'package:triage/theme/app_theme.dart';
+import 'package:triage/widgets/ui/ui.dart';
 
 class Sidebar extends StatelessWidget {
   const Sidebar({super.key});
@@ -65,7 +66,7 @@ class Sidebar extends StatelessWidget {
               color: sel ? Colors.white : Colors.transparent,
               borderRadius: BorderRadius.circular(5),
               boxShadow: sel
-                  ? [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 2)]
+                  ? [BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 2)]
                   : null,
             ),
             child: Text(label,
@@ -81,7 +82,7 @@ class Sidebar extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 8),
       decoration: BoxDecoration(
-          color: Colors.black.withOpacity(0.05),
+          color: Colors.black.withValues(alpha: 0.05),
           borderRadius: BorderRadius.circular(7)),
       child: Row(children: [
         opt('My tickets', ViewScope.mine),
@@ -114,7 +115,7 @@ class Sidebar extends StatelessWidget {
         dotColor: AppColors.avatarColor(key),
         label: name.isEmpty ? key : name,
         count: count,
-        trailing: _toggle(!hidden),
+        trailing: AppToggle(value: !hidden),
       ),
     );
   }
@@ -127,7 +128,7 @@ class Sidebar extends StatelessWidget {
         active: member.visible,
         leading: _avatar(member.name),
         label: member.name,
-        trailing: _toggle(member.visible),
+        trailing: AppToggle(value: member.visible),
       ),
     );
   }
@@ -196,26 +197,6 @@ class Sidebar extends StatelessWidget {
         child: on
             ? const Icon(Icons.check, size: 10, color: Colors.white)
             : null,
-      );
-
-  Widget _toggle(bool on) => Container(
-        width: 28,
-        height: 17,
-        decoration: BoxDecoration(
-          color: on ? AppColors.priority['Low'] : Colors.black.withOpacity(0.15),
-          borderRadius: BorderRadius.circular(9),
-        ),
-        child: AnimatedAlign(
-          duration: const Duration(milliseconds: 120),
-          alignment: on ? Alignment.centerRight : Alignment.centerLeft,
-          child: Container(
-            margin: const EdgeInsets.all(2),
-            width: 13,
-            height: 13,
-            decoration: const BoxDecoration(
-                color: Colors.white, shape: BoxShape.circle),
-          ),
-        ),
       );
 
   Widget _avatar(String name) => Container(

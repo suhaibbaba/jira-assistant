@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '../state/app_state.dart';
-import '../theme/app_theme.dart';
+import 'package:triage/state/app_state.dart';
+import 'package:triage/theme/app_theme.dart';
+import 'package:triage/widgets/ui/ui.dart';
 
 class ConnectScreen extends StatefulWidget {
   const ConnectScreen({super.key});
@@ -118,11 +119,31 @@ class _ConnectScreenState extends State<ConnectScreen> {
                     ),
                     const SizedBox(height: 16),
                   ],
-                  _input('Jira Domain', _domain, 'yourcompany.atlassian.net'),
-                  _input('Email', _email, 'you@company.com'),
-                  _input('API Token', _token, 'Paste your API token', obscure: true),
-                  _input('JQL filter (optional)', _jql,
-                      'project = "ABC" AND sprint in openSprints()'),
+                  AppTextField(
+                      label: 'Jira Domain',
+                      controller: _domain,
+                      hint: 'yourcompany.atlassian.net',
+                      labelAbove: true),
+                  const SizedBox(height: 14),
+                  AppTextField(
+                      label: 'Email',
+                      controller: _email,
+                      hint: 'you@company.com',
+                      labelAbove: true),
+                  const SizedBox(height: 14),
+                  AppTextField(
+                      label: 'API Token',
+                      controller: _token,
+                      hint: 'Paste your API token',
+                      obscure: true,
+                      labelAbove: true),
+                  const SizedBox(height: 14),
+                  AppTextField(
+                      label: 'JQL filter (optional)',
+                      controller: _jql,
+                      hint: 'project = "ABC" AND sprint in openSprints()',
+                      labelAbove: true),
+                  const SizedBox(height: 14),
                   const SizedBox(height: 8),
                   _busy
                       ? const Padding(
@@ -132,21 +153,7 @@ class _ConnectScreenState extends State<ConnectScreen> {
                                   width: 22,
                                   height: 22,
                                   child: CircularProgressIndicator(strokeWidth: 2.5))))
-                      : GestureDetector(
-                          onTap: _connect,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                            alignment: Alignment.center,
-                            decoration: BoxDecoration(
-                                color: AppColors.accent,
-                                borderRadius: BorderRadius.circular(8)),
-                            child: const Text('Load Tickets  →',
-                                style: TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w700,
-                                    fontSize: 14)),
-                          ),
-                        ),
+                      : AppButton(label: 'Load Tickets  →', onTap: _connect),
                   const SizedBox(height: 16),
                   GestureDetector(
                     onTap: () => launchUrl(Uri.parse(
@@ -160,44 +167,6 @@ class _ConnectScreenState extends State<ConnectScreen> {
             ),
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _input(String label, TextEditingController c, String hint,
-      {bool obscure = false}) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 14),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(label,
-              style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF374151))),
-          const SizedBox(height: 4),
-          TextField(
-            controller: c,
-            obscureText: obscure,
-            style: const TextStyle(fontSize: 13),
-            decoration: InputDecoration(
-              hintText: hint,
-              hintStyle: const TextStyle(fontSize: 12, color: AppColors.text3),
-              isDense: true,
-              contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: const BorderSide(color: Color(0xFFE2E8F0), width: 1.5),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: const BorderSide(color: AppColors.accent, width: 1.5),
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }

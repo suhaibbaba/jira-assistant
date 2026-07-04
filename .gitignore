@@ -1,17 +1,27 @@
+# Build & tool artifacts
 .dart_tool/
 .packages
 build/
 .flutter-plugins
 .flutter-plugins-dependencies
+
+# IDE
 *.iml
 .idea/
-android
-ios
-windows
-linux
-macos
-web
-test
+.vscode/
+
+# OS
 .DS_Store
+
+# Platforms this app doesn't target (regenerate with `flutter create .` if needed)
+android/
+ios/
+linux/
+web/
+
+# NOTE — deliberately TRACKED (do not add):
+#   macos/         → entitlements, bundle ID, icons, signing config
+#   windows/       → icon + installer config (when you build it)
+#   pubspec.lock   → pins exact dependency versions for reproducible builds
+#   test/          → tests belong in the repo
 .metadata
-pubspec.lock

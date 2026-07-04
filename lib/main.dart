@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import 'state/app_state.dart';
-import 'theme/app_theme.dart';
-import 'services/notification_service.dart';
-import 'screens/connect_screen.dart';
-import 'screens/board_screen.dart';
+import 'package:triage/state/app_state.dart';
+import 'package:triage/theme/app_theme.dart';
+import 'package:triage/services/notification_service.dart';
+import 'package:triage/screens/connect_screen.dart';
+import 'package:triage/screens/board_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();

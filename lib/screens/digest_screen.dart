@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
-import '../state/app_state.dart';
-import '../models/ticket.dart';
-import '../theme/app_theme.dart';
-import '../widgets/ticket_card.dart';
-import '../widgets/ticket_detail_dialog.dart';
+import 'package:triage/state/app_state.dart';
+import 'package:triage/models/ticket.dart';
+import 'package:triage/theme/app_theme.dart';
+import 'package:triage/widgets/ticket_card.dart';
+import 'package:triage/widgets/ui/ui.dart';
+import 'package:triage/widgets/ticket_detail_dialog.dart';
 
 class DigestScreen extends StatelessWidget {
   const DigestScreen({super.key});
@@ -46,7 +47,7 @@ class DigestScreen extends StatelessWidget {
               borderRadius: BorderRadius.circular(12),
               boxShadow: [
                 BoxShadow(
-                    color: const Color(0xFFFF9500).withOpacity(0.22),
+                    color: const Color(0xFFFF9500).withValues(alpha: 0.22),
                     blurRadius: 14,
                     offset: const Offset(0, 4)),
               ],
@@ -108,28 +109,7 @@ class DigestScreen extends StatelessWidget {
 
   Widget _sectionHeader(String title, int count, Color color) => Padding(
         padding: const EdgeInsets.only(bottom: 10),
-        child: Row(
-          children: [
-            Container(
-                width: 9,
-                height: 9,
-                decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
-            const SizedBox(width: 8),
-            Text(title,
-                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
-            const SizedBox(width: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 1),
-              decoration: BoxDecoration(
-                  color: color, borderRadius: BorderRadius.circular(9)),
-              child: Text('$count',
-                  style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700)),
-            ),
-          ],
-        ),
+        child: SectionHeader(title: title, count: count, color: color),
       );
 
   void _detail(BuildContext context, AppState app, Ticket t) => showDialog(

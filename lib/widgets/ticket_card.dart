@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import '../models/ticket.dart';
-import '../models/attention_item.dart';
-import '../theme/app_theme.dart';
+import 'package:triage/models/ticket.dart';
+import 'package:triage/models/attention_item.dart';
+import 'package:triage/theme/app_theme.dart';
 
 /// A single ticket card. The key text and the link icon both open the ticket
 /// in the browser. Tapping elsewhere opens the detail popup.
@@ -55,7 +55,7 @@ class _TicketCardState extends State<TicketCard> {
             border: Border.all(color: AppColors.separator, width: 0.5),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(_hover ? 0.10 : 0.04),
+                color: Colors.black.withValues(alpha: _hover ? 0.10 : 0.04),
                 blurRadius: _hover ? 10 : 2,
                 offset: const Offset(0, 1),
               ),
@@ -147,7 +147,7 @@ class _TicketCardState extends State<TicketCard> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
             decoration: BoxDecoration(
-              color: AppColors.aging.withOpacity(0.14),
+              color: AppColors.aging.withValues(alpha: 0.14),
               borderRadius: BorderRadius.circular(4),
             ),
             child: Text('⏳ ${t.ageLabel} in ${t.status}',
@@ -197,7 +197,7 @@ class _TicketCardState extends State<TicketCard> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
       decoration: BoxDecoration(
-        color: c.withOpacity(0.08),
+        color: c.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(7),
       ),
       child: Row(

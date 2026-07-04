@@ -1,15 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../state/app_state.dart';
-import '../models/ticket.dart';
-import '../models/attention_item.dart';
-import '../theme/app_theme.dart';
-import '../widgets/sidebar.dart';
-import '../widgets/ticket_card.dart';
-import '../widgets/ticket_detail_dialog.dart';
-import 'settings_screen.dart';
-import 'digest_screen.dart';
-import 'time_screen.dart';
+import 'package:triage/state/app_state.dart';
+import 'package:triage/models/ticket.dart';
+import 'package:triage/models/attention_item.dart';
+import 'package:triage/theme/app_theme.dart';
+import 'package:triage/widgets/sidebar.dart';
+import 'package:triage/widgets/ticket_card.dart';
+import 'package:triage/widgets/ui/ui.dart';
+import 'package:triage/widgets/ticket_detail_dialog.dart';
+import 'package:triage/screens/settings_screen.dart';
+import 'package:triage/screens/digest_screen.dart';
+import 'package:triage/screens/time_screen.dart';
 
 class BoardScreen extends StatelessWidget {
   const BoardScreen({super.key});
@@ -58,23 +59,34 @@ class _Toolbar extends StatelessWidget {
           Text('· ${app.settings.domain}',
               style: const TextStyle(fontSize: 12, color: AppColors.text2)),
           const Spacer(),
-          _toolBtn(Icons.timer_outlined, 'Time tracking', () {
-            Navigator.of(context)
-                .push(MaterialPageRoute(builder: (_) => const TimeScreen()));
-          }),
+          AppIconButton(
+              icon: Icons.timer_outlined,
+              tooltip: 'Time tracking',
+              onTap: () {
+                Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const TimeScreen()));
+              }),
           const SizedBox(width: 10),
-          _toolBtn(Icons.wb_sunny_outlined, 'Morning digest', () {
-            Navigator.of(context)
-                .push(MaterialPageRoute(builder: (_) => const DigestScreen()));
-          }),
+          AppIconButton(
+              icon: Icons.wb_sunny_outlined,
+              tooltip: 'Morning digest',
+              onTap: () {
+                Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const DigestScreen()));
+              }),
           const SizedBox(width: 10),
-          _toolBtn(Icons.add, 'Add ticket that needs attention',
-              () => _showAddDialog(context)),
+          AppIconButton(
+              icon: Icons.add,
+              tooltip: 'Add ticket that needs attention',
+              onTap: () => _showAddDialog(context)),
           const SizedBox(width: 10),
-          _toolBtn(Icons.settings_outlined, 'Settings', () {
-            Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const SettingsScreen()));
-          }),
+          AppIconButton(
+              icon: Icons.settings_outlined,
+              tooltip: 'Settings',
+              onTap: () {
+                Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const SettingsScreen()));
+              }),
           const SizedBox(width: 14),
           _SyncButton(app: app),
         ],
@@ -82,90 +94,56 @@ class _Toolbar extends StatelessWidget {
     );
   }
 
-  Widget _toolBtn(IconData icon, String tip, VoidCallback onTap) => Tooltip(
-        message: tip,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(7),
-          child: Container(
-            width: 30,
-            height: 30,
-            decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.05),
-                borderRadius: BorderRadius.circular(7)),
-            child: Icon(icon, size: 16, color: AppColors.text2),
-          ),
-        ),
-      );
-
   void _showAddDialog(BuildContext context) {
     final keyController = TextEditingController();
     final byController = TextEditingController();
-    showDialog(
+    showAppDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-        title: const Text('Needs attention',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-                'Add a ticket someone sent you (e.g. for an estimate). '
-                'The time is recorded automatically.',
-                style: TextStyle(fontSize: 12, color: AppColors.text2)),
-            const SizedBox(height: 12),
-            TextField(
-              controller: keyController,
-              autofocus: true,
-              textCapitalization: TextCapitalization.characters,
-              decoration: InputDecoration(
-                labelText: 'Ticket key',
-                hintText: 'XSD-123',
-                hintStyle:
-                    const TextStyle(fontSize: 12, color: AppColors.text3),
-                isDense: true,
-                border:
-                    OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-              ),
-            ),
-            const SizedBox(height: 10),
-            TextField(
-              controller: byController,
-              decoration: InputDecoration(
-                labelText: 'Sent by',
-                hintText: 'e.g. Product Owner, Sarah…',
-                hintStyle:
-                    const TextStyle(fontSize: 12, color: AppColors.text3),
-                isDense: true,
-                border:
-                    OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
-          FilledButton(
-            onPressed: () async {
-              final key = keyController.text.trim();
-              final by = byController.text.trim();
-              Navigator.pop(ctx);
-              if (key.isEmpty) return;
-              final ok = await context
-                  .read<AppState>()
-                  .addAttention(key, by.isEmpty ? 'Unknown' : by);
-              if (context.mounted && !ok) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Could not find ticket "$key".')));
-              }
-            },
-            child: const Text('Add'),
+      title: 'Needs attention',
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const DialogHint(
+              'Add a ticket someone sent you (e.g. for an estimate). '
+              'The time is recorded automatically.'),
+          const SizedBox(height: 12),
+          AppTextField(
+            controller: keyController,
+            label: 'Ticket key',
+            hint: 'PAY-123',
+            autofocus: true,
+            textCapitalization: TextCapitalization.characters,
+          ),
+          const SizedBox(height: 10),
+          AppTextField(
+            controller: byController,
+            label: 'Sent by',
+            hint: 'e.g. Product Owner, Sarah…',
           ),
         ],
       ),
+      actions: [
+        TextButton(
+            onPressed: () => Navigator.of(context, rootNavigator: true).pop(),
+            child: const Text('Cancel')),
+        FilledButton(
+          onPressed: () async {
+            final key = keyController.text.trim();
+            final by = byController.text.trim();
+            Navigator.of(context, rootNavigator: true).pop();
+            if (key.isEmpty) return;
+            final ok = await context
+                .read<AppState>()
+                .addAttention(key, by.isEmpty ? 'Unknown' : by);
+            if (context.mounted && !ok) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Could not find ticket "$key".')));
+            }
+          },
+          child: const Text('Add'),
+        ),
+      ],
     );
   }
 }
@@ -280,7 +258,8 @@ class _Board extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.fromLTRB(22, 18, 22, 24),
       children: [
-        if (app.newTicketCount > 0) _newBanner(app.newTicketCount),
+        if (app.newTicketCount > 0 && !app.newBannerDismissed)
+          _newBanner(app, app.newTicketCount),
         if (grouped['Needs Attention'] != null)
           _StatusSection(
             status: 'Needs Attention',
@@ -300,7 +279,7 @@ class _Board extends StatelessWidget {
     );
   }
 
-  Widget _newBanner(int count) => Container(
+  Widget _newBanner(AppState app, int count) => Container(
         margin: const EdgeInsets.only(bottom: 18),
         padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
         decoration: BoxDecoration(
@@ -309,27 +288,39 @@ class _Board extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
-                color: const Color(0xFFFF3B30).withOpacity(0.25),
+                color: const Color(0xFFFF3B30).withValues(alpha: 0.25),
                 blurRadius: 14,
                 offset: const Offset(0, 4)),
           ],
         ),
         child: Row(
           children: [
-            const Text('🆕', style: TextStyle(fontSize: 20)),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('$count new tickets need triage',
+                  Text('$count new tickets need attention',
                       style: const TextStyle(
                           color: Colors.white,
                           fontSize: 15,
                           fontWeight: FontWeight.w700)),
-                  const Text('Highest priority first',
-                      style: TextStyle(color: Colors.white70, fontSize: 12)),
                 ],
+              ),
+            ),
+            // ── Close button ──
+            MouseRegion(
+              cursor: SystemMouseCursors.click,
+              child: GestureDetector(
+                onTap: app.dismissNewBanner,
+                child: Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.18),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.close, size: 14, color: Colors.white),
+                ),
               ),
             ),
           ],
@@ -359,33 +350,11 @@ class _StatusSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Container(
-                  width: 9,
-                  height: 9,
-                  decoration:
-                      BoxDecoration(color: color, shape: BoxShape.circle)),
-              const SizedBox(width: 8),
-              Text(status,
-                  style: const TextStyle(
-                      fontSize: 14, fontWeight: FontWeight.w700)),
-              const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 1),
-                decoration: BoxDecoration(
-                    color: color, borderRadius: BorderRadius.circular(9)),
-                child: Text('${tickets.length}',
-                    style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700)),
-              ),
-              const Spacer(),
-              if (draggable)
-                const Text('⇅ drag to reorder',
-                    style: TextStyle(fontSize: 10, color: AppColors.text3)),
-            ],
+          SectionHeader(
+            title: status,
+            count: tickets.length,
+            color: color,
+            trailing: draggable ? '⇅ drag to reorder' : null,
           ),
           const SizedBox(height: 10),
           if (draggable)

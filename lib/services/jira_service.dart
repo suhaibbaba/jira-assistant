@@ -1,8 +1,8 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
-import '../models/ticket.dart';
-import '../models/settings.dart';
+import 'package:triage/models/ticket.dart';
+import 'package:triage/models/settings.dart';
 
 /// Typed outcome of a sync so the UI can react differently to auth vs network errors.
 enum SyncErrorKind { none, network, auth, server, unknown }
