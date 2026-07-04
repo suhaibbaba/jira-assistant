@@ -22,7 +22,7 @@ class AppColors {
     'Need Clarification': Color(0xFFAF52DE),
     'In Progress': Color(0xFF007AFF),
     'Review': Color(0xFF5856D6),
-    'Estimate Requested': Color(0xFFFF9F0A),
+    'Needs Attention': Color(0xFFFF9F0A),
   };
 
   static const Map<String, Color> priority = {

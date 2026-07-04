@@ -1,16 +1,19 @@
 import 'package:flutter/material.dart';
 import '../models/ticket.dart';
+import '../models/attention_item.dart';
 import '../theme/app_theme.dart';
 
 /// A single ticket card. The key text and the link icon both open the ticket
-/// in the browser. Tapping elsewhere on the card opens the detail popup.
+/// in the browser. Tapping elsewhere opens the detail popup.
+/// For "Needs Attention" tickets, shows who sent it + when, and a Done button.
 class TicketCard extends StatefulWidget {
   final Ticket ticket;
   final VoidCallback onOpenInBrowser;
   final VoidCallback onTapDetail;
   final bool showDragHandle;
   final bool showAgePill;
-  final Widget? trailingExtra;
+  final AttentionMeta? attentionMeta;
+  final VoidCallback? onMarkDone;
 
   const TicketCard({
     super.key,
@@ -19,7 +22,8 @@ class TicketCard extends StatefulWidget {
     required this.onTapDetail,
     this.showDragHandle = true,
     this.showAgePill = false,
-    this.trailingExtra,
+    this.attentionMeta,
+    this.onMarkDone,
   });
 
   @override
@@ -33,7 +37,7 @@ class _TicketCardState extends State<TicketCard> {
   Widget build(BuildContext context) {
     final t = widget.ticket;
     final accentBorder = t.isEstimateRequest
-        ? AppColors.status['Estimate Requested']!
+        ? AppColors.status['Needs Attention']!
         : AppColors.priorityColor(t.priority);
 
     return MouseRegion(
@@ -45,16 +49,10 @@ class _TicketCardState extends State<TicketCard> {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 120),
           margin: const EdgeInsets.only(bottom: 8),
-          padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
           decoration: BoxDecoration(
             color: AppColors.card,
             borderRadius: BorderRadius.circular(10),
-            border: Border(
-              left: BorderSide(color: accentBorder, width: 3),
-              top: const BorderSide(color: AppColors.separator, width: 0.5),
-              right: const BorderSide(color: AppColors.separator, width: 0.5),
-              bottom: const BorderSide(color: AppColors.separator, width: 0.5),
-            ),
+            border: Border.all(color: AppColors.separator, width: 0.5),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withOpacity(_hover ? 0.10 : 0.04),
@@ -63,35 +61,57 @@ class _TicketCardState extends State<TicketCard> {
               ),
             ],
           ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (widget.showDragHandle)
-                const Padding(
-                  padding: EdgeInsets.only(right: 9, top: 2),
-                  child: Text('⋮⋮',
-                      style: TextStyle(color: Color(0xFFD1D1D6), fontSize: 13)),
-                ),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _topRow(t),
-                    const SizedBox(height: 4),
-                    Text(t.summary,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w500,
-                            height: 1.35,
-                            color: AppColors.text)),
-                    const SizedBox(height: 6),
-                    _metaRow(t),
-                  ],
-                ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(10),
+            child: IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Colored accent strip (uniform-border-safe)
+                  Container(width: 3, color: accentBorder),
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(9, 10, 12, 10),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (widget.showDragHandle)
+                            const Padding(
+                              padding: EdgeInsets.only(right: 9, top: 2),
+                              child: Text('⋮⋮',
+                                  style: TextStyle(
+                                      color: Color(0xFFD1D1D6), fontSize: 13)),
+                            ),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                _topRow(t),
+                                const SizedBox(height: 4),
+                                Text(t.summary,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w500,
+                                        height: 1.35,
+                                        color: AppColors.text)),
+                                const SizedBox(height: 6),
+                                _metaRow(t),
+                                if (widget.attentionMeta != null) ...[
+                                  const SizedBox(height: 8),
+                                  _attentionRow(widget.attentionMeta!),
+                                ],
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       ),
@@ -101,10 +121,8 @@ class _TicketCardState extends State<TicketCard> {
   Widget _topRow(Ticket t) {
     return Row(
       children: [
-        // Clickable ticket key → opens in browser
         _KeyChip(label: t.key, onTap: widget.onOpenInBrowser),
         const SizedBox(width: 4),
-        // Link icon right after the key → also opens in browser
         InkWell(
           onTap: widget.onOpenInBrowser,
           borderRadius: BorderRadius.circular(4),
@@ -126,14 +144,21 @@ class _TicketCardState extends State<TicketCard> {
                 fontSize: 10, fontWeight: FontWeight.w600, color: AppColors.text2)),
         const Spacer(),
         if (widget.showAgePill && t.timeInStatus != null)
-          _AgePill(label: '⏳ ${t.ageLabel} in ${t.status}')
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+            decoration: BoxDecoration(
+              color: AppColors.aging.withOpacity(0.14),
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Text('⏳ ${t.ageLabel} in ${t.status}',
+                style: const TextStyle(
+                    fontSize: 9,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.aging)),
+          )
         else
           Text(t.updatedLabel,
               style: const TextStyle(fontSize: 10, color: AppColors.text3)),
-        if (widget.trailingExtra != null) ...[
-          const SizedBox(width: 6),
-          widget.trailingExtra!,
-        ],
       ],
     );
   }
@@ -156,12 +181,56 @@ class _TicketCardState extends State<TicketCard> {
             height: 18,
             alignment: Alignment.center,
             decoration: BoxDecoration(
-                color: AppColors.avatarColor(t.assigneeName!), shape: BoxShape.circle),
+                color: AppColors.avatarColor(t.assigneeName!),
+                shape: BoxShape.circle),
             child: Text(t.assigneeInitials,
                 style: const TextStyle(
                     fontSize: 8, fontWeight: FontWeight.w600, color: Colors.white)),
           ),
       ],
+    );
+  }
+
+  /// "👤 from Sarah · sent 2d ago      [✓ Done]"
+  Widget _attentionRow(AttentionMeta meta) {
+    final c = AppColors.status['Needs Attention']!;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      decoration: BoxDecoration(
+        color: c.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(7),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              '👤 from ${meta.requestedBy} · sent ${meta.agoLabel}',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                  fontSize: 11, fontWeight: FontWeight.w600, color: c),
+            ),
+          ),
+          if (widget.onMarkDone != null)
+            InkWell(
+              onTap: widget.onMarkDone,
+              borderRadius: BorderRadius.circular(6),
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: AppColors.priority['Low'],
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: const Text('✓ Done',
+                    style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white)),
+              ),
+            ),
+        ],
+      ),
     );
   }
 }
@@ -204,24 +273,6 @@ class _KeyChipState extends State<_KeyChip> {
           ),
         ),
       ),
-    );
-  }
-}
-
-class _AgePill extends StatelessWidget {
-  final String label;
-  const _AgePill({required this.label});
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
-      decoration: BoxDecoration(
-        color: AppColors.aging.withOpacity(0.14),
-        borderRadius: BorderRadius.circular(4),
-      ),
-      child: Text(label,
-          style: const TextStyle(
-              fontSize: 9, fontWeight: FontWeight.w700, color: AppColors.aging)),
     );
   }
 }

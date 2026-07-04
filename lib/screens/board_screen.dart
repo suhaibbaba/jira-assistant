@@ -2,13 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../state/app_state.dart';
 import '../models/ticket.dart';
+import '../models/attention_item.dart';
 import '../theme/app_theme.dart';
 import '../widgets/sidebar.dart';
 import '../widgets/ticket_card.dart';
 import '../widgets/ticket_detail_dialog.dart';
 import 'settings_screen.dart';
 import 'digest_screen.dart';
-import 'jarvis_screen.dart';
 import 'time_screen.dart';
 
 class BoardScreen extends StatelessWidget {
@@ -47,7 +47,8 @@ class _Toolbar extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16),
       decoration: const BoxDecoration(
         color: AppColors.bgSidebar,
-        border: Border(bottom: BorderSide(color: AppColors.separator, width: 0.5)),
+        border:
+            Border(bottom: BorderSide(color: AppColors.separator, width: 0.5)),
       ),
       child: Row(
         children: [
@@ -57,27 +58,22 @@ class _Toolbar extends StatelessWidget {
           Text('· ${app.settings.domain}',
               style: const TextStyle(fontSize: 12, color: AppColors.text2)),
           const Spacer(),
-          _toolBtn(Icons.auto_awesome, 'Jarvis assistant', () {
-            Navigator.of(context).push(MaterialPageRoute(
-                builder: (_) => const JarvisScreen()));
-          }),
-          const SizedBox(width: 10),
           _toolBtn(Icons.timer_outlined, 'Time tracking', () {
-            Navigator.of(context).push(MaterialPageRoute(
-                builder: (_) => const TimeScreen()));
+            Navigator.of(context)
+                .push(MaterialPageRoute(builder: (_) => const TimeScreen()));
           }),
           const SizedBox(width: 10),
           _toolBtn(Icons.wb_sunny_outlined, 'Morning digest', () {
-            Navigator.of(context).push(MaterialPageRoute(
-                builder: (_) => const DigestScreen()));
+            Navigator.of(context)
+                .push(MaterialPageRoute(builder: (_) => const DigestScreen()));
           }),
           const SizedBox(width: 10),
-          _toolBtn(Icons.add, 'Add ticket to watch',
+          _toolBtn(Icons.add, 'Add ticket that needs attention',
               () => _showAddDialog(context)),
           const SizedBox(width: 10),
           _toolBtn(Icons.settings_outlined, 'Settings', () {
-            Navigator.of(context).push(MaterialPageRoute(
-                builder: (_) => const SettingsScreen()));
+            Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const SettingsScreen()));
           }),
           const SizedBox(width: 14),
           _SyncButton(app: app),
@@ -103,29 +99,48 @@ class _Toolbar extends StatelessWidget {
       );
 
   void _showAddDialog(BuildContext context) {
-    final controller = TextEditingController();
+    final keyController = TextEditingController();
+    final byController = TextEditingController();
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-        title: const Text('Add ticket to watch',
+        title: const Text('Needs attention',
             style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-                'Paste a ticket key (e.g. PAY-123). It joins your Estimate Requested lane.',
+                'Add a ticket someone sent you (e.g. for an estimate). '
+                'The time is recorded automatically.',
                 style: TextStyle(fontSize: 12, color: AppColors.text2)),
             const SizedBox(height: 12),
             TextField(
-              controller: controller,
+              controller: keyController,
               autofocus: true,
+              textCapitalization: TextCapitalization.characters,
               decoration: InputDecoration(
-                hintText: 'PAY-123',
+                labelText: 'Ticket key',
+                hintText: 'XSD-123',
+                hintStyle:
+                    const TextStyle(fontSize: 12, color: AppColors.text3),
                 isDense: true,
-                border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8)),
+                border:
+                    OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+              ),
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              controller: byController,
+              decoration: InputDecoration(
+                labelText: 'Sent by',
+                hintText: 'e.g. Product Owner, Sarah…',
+                hintStyle:
+                    const TextStyle(fontSize: 12, color: AppColors.text3),
+                isDense: true,
+                border:
+                    OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
               ),
             ),
           ],
@@ -135,10 +150,13 @@ class _Toolbar extends StatelessWidget {
               onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
           FilledButton(
             onPressed: () async {
-              final key = controller.text.trim();
+              final key = keyController.text.trim();
+              final by = byController.text.trim();
               Navigator.pop(ctx);
               if (key.isEmpty) return;
-              final ok = await context.read<AppState>().addEstimateRequest(key);
+              final ok = await context
+                  .read<AppState>()
+                  .addAttention(key, by.isEmpty ? 'Unknown' : by);
               if (context.mounted && !ok) {
                 ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(content: Text('Could not find ticket "$key".')));
@@ -216,7 +234,8 @@ class _ConnectionBar extends StatelessWidget {
             child: Text(
               isAuth
                   ? 'Your Jira token expired — reconnect to continue.'
-                  : (app.statusMessage ?? 'Offline — showing last synced data.'),
+                  : (app.statusMessage ??
+                      'Offline — showing last synced data.'),
               style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w500,
@@ -244,25 +263,32 @@ class _Board extends StatelessWidget {
     final app = context.watch<AppState>();
     final grouped = app.groupedByStatus;
 
-    // Section order: New first, then the rest, Estimate Requested handled separately.
-    final order = ['New', 'Blocked', 'Need Clarification', 'In Progress', 'Review'];
+    // Section order: Needs Attention pinned first, then New, then the rest.
+    final order = [
+      'New',
+      'Blocked',
+      'Need Clarification',
+      'In Progress',
+      'Review'
+    ];
     final sections = <String>[
       ...order.where((s) => grouped.containsKey(s)),
-      ...grouped.keys.where((s) => !order.contains(s) && s != 'Estimate Requested'),
+      ...grouped.keys
+          .where((s) => !order.contains(s) && s != 'Needs Attention'),
     ];
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(22, 18, 22, 24),
       children: [
         if (app.newTicketCount > 0) _newBanner(app.newTicketCount),
-        if (grouped['Estimate Requested'] != null)
+        if (grouped['Needs Attention'] != null)
           _StatusSection(
-            status: 'Estimate Requested',
-            tickets: grouped['Estimate Requested']!,
+            status: 'Needs Attention',
+            tickets: grouped['Needs Attention']!,
             draggable: false,
           ),
         ...sections.map((s) => _StatusSection(status: s, tickets: grouped[s]!)),
-        if (sections.isEmpty && grouped['Estimate Requested'] == null)
+        if (sections.isEmpty && grouped['Needs Attention'] == null)
           const Padding(
             padding: EdgeInsets.only(top: 60),
             child: Center(
@@ -338,11 +364,12 @@ class _StatusSection extends StatelessWidget {
               Container(
                   width: 9,
                   height: 9,
-                  decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+                  decoration:
+                      BoxDecoration(color: color, shape: BoxShape.circle)),
               const SizedBox(width: 8),
               Text(status,
-                  style:
-                      const TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
+                  style: const TextStyle(
+                      fontSize: 14, fontWeight: FontWeight.w700)),
               const SizedBox(width: 8),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 1),
@@ -388,10 +415,15 @@ class _StatusSection extends StatelessWidget {
   }
 
   Widget _cardFor(BuildContext context, AppState app, Ticket t, {Key? key}) {
+    final AttentionMeta? meta =
+        t.isEstimateRequest ? app.attention.metaFor(t.key) : null;
     return TicketCard(
       key: key,
       ticket: t,
       showDragHandle: draggable,
+      attentionMeta: meta,
+      onMarkDone:
+          t.isEstimateRequest ? () => app.markAttentionDone(t.key) : null,
       onOpenInBrowser: () => app.openInBrowser(t.key),
       onTapDetail: () => showDialog(
         context: context,
@@ -399,7 +431,7 @@ class _StatusSection extends StatelessWidget {
           ticket: t,
           onOpenInBrowser: () => app.openInBrowser(t.key),
           onDismissEstimate:
-              t.isEstimateRequest ? () => app.dismissEstimateRequest(t.key) : null,
+              t.isEstimateRequest ? () => app.markAttentionDone(t.key) : null,
         ),
       ),
     );

@@ -1,10 +1,11 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../models/ticket.dart';
 import '../models/settings.dart';
-import '../models/personal_lists.dart';
+import '../models/attention_item.dart';
 import '../models/time_log.dart';
 import '../services/jira_service.dart';
 import '../services/storage_service.dart';
@@ -26,10 +27,9 @@ class AppState extends ChangeNotifier {
   Map<String, int> _manualOrder = {};
   Set<String> _seenKeys = {};
 
-  // Jarvis-related local data:
-  final PersonalLists lists = PersonalLists();
+  // Local-only data:
+  final AttentionStore attention = AttentionStore();
   final TimeTracker tracker = TimeTracker();
-  String aiApiKey = ''; // optional, user-supplied; empty = AI disabled
 
   ViewScope scope = ViewScope.mine;
   ConnState conn = ConnState.unconfigured;
@@ -50,9 +50,8 @@ class AppState extends ChangeNotifier {
     _manualOrder = await _storage.loadManualOrder();
     _seenKeys = await _storage.loadSeenKeys();
     _tickets = await _storage.loadCache();
-    await lists.load();
+    await attention.load();
     await tracker.load();
-    aiApiKey = await _storage.readAiKey() ?? '';
 
     final token = await _storage.readToken();
     if (settings.domain.isNotEmpty && settings.email.isNotEmpty && token != null) {
@@ -85,13 +84,24 @@ class AppState extends ChangeNotifier {
     await sync();
   }
 
+  /// Full disconnect: wipes the token AND all stored data — email, domain,
+  /// settings, cached tickets, personal lists, time logs, manual order.
   Future<void> signOut() async {
     await _storage.clearToken();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.clear(); // settings, cache, lists, time logs, seen keys, order
+    settings = AppSettings();
+    await attention.clearAll();
     _creds = null;
     _jira = null;
     _tickets = [];
+    _manualOrder = {};
+    _seenKeys = {};
     conn = ConnState.unconfigured;
+    statusMessage = null;
+    lastSyncedAt = null;
     _pollTimer?.cancel();
+    _retryTimer?.cancel();
     notifyListeners();
   }
 
@@ -229,7 +239,7 @@ class AppState extends ChangeNotifier {
   Map<String, List<Ticket>> get groupedByStatus {
     final map = <String, List<Ticket>>{};
     for (final t in _visibleTickets) {
-      final bucket = t.isEstimateRequest ? 'Estimate Requested' : t.status;
+      final bucket = t.isEstimateRequest ? 'Needs Attention' : t.status;
       if (!t.isEstimateRequest && !settings.visibleStatuses.contains(t.status)) {
         continue;
       }
@@ -332,19 +342,8 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Live tickets (excluding nothing) — used by Jarvis organizer & AI.
+  /// Live tickets, unfiltered.
   List<Ticket> get allTickets => List.unmodifiable(_tickets);
-
-  Future<void> persistLists() async {
-    await lists.save();
-    notifyListeners();
-  }
-
-  Future<void> setAiKey(String key) async {
-    aiApiKey = key.trim();
-    await _storage.saveAiKey(aiApiKey);
-    notifyListeners();
-  }
 
   /// Open a ticket in the browser (clicking the key or the link icon).
   Future<void> openInBrowser(String key) async {
@@ -355,19 +354,25 @@ class AppState extends ChangeNotifier {
     }
   }
 
-  /// Add a ticket by key to the local "Estimate Requested" lane.
-  Future<bool> addEstimateRequest(String key) async {
+  /// Add a ticket to the "Needs Attention" section, recording who sent it
+  /// and when. Returns false if the ticket key doesn't exist in Jira.
+  Future<bool> addAttention(String key, String requestedBy) async {
     if (_jira == null) return false;
-    final t = await _jira!.fetchOne(key.trim().toUpperCase(), asEstimate: true);
+    final cleanKey = key.trim().toUpperCase();
+    final t = await _jira!.fetchOne(cleanKey, asEstimate: true);
     if (t == null) return false;
-    if (_tickets.any((x) => x.key == t.key && x.isEstimateRequest)) return true;
-    _tickets.add(t);
-    await _storage.saveCache(_tickets);
+    await attention.add(cleanKey, requestedBy);
+    if (!_tickets.any((x) => x.key == t.key && x.isEstimateRequest)) {
+      _tickets.add(t);
+      await _storage.saveCache(_tickets);
+    }
     notifyListeners();
     return true;
   }
 
-  Future<void> dismissEstimateRequest(String key) async {
+  /// Mark an attention item as done: removes it from the section.
+  Future<void> markAttentionDone(String key) async {
+    await attention.markDone(key);
     _tickets.removeWhere((t) => t.key == key && t.isEstimateRequest);
     await _storage.saveCache(_tickets);
     notifyListeners();

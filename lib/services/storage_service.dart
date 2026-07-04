@@ -21,11 +21,6 @@ class StorageService {
   Future<String?> readToken() => _secure.read(key: _kToken);
   Future<void> clearToken() => _secure.delete(key: _kToken);
 
-  // ── Optional AI API key (secure) ──
-  static const _kAiKey = 'ai_api_key';
-  Future<void> saveAiKey(String key) => _secure.write(key: _kAiKey, value: key);
-  Future<String?> readAiKey() => _secure.read(key: _kAiKey);
-
   // ── Settings ──
   Future<void> saveSettings(AppSettings s) async {
     final prefs = await SharedPreferences.getInstance();

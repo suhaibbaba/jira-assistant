@@ -27,7 +27,31 @@ class _ConnectScreenState extends State<ConnectScreen> {
     _jql.text = s.jql;
   }
 
+  String? _validate() {
+    final domain = _domain.text.trim();
+    final email = _email.text.trim();
+    final token = _token.text.trim();
+    if (domain.isEmpty) return 'Enter your Jira domain.';
+    if (domain.contains(' ') || !domain.contains('.')) {
+      return 'Domain looks invalid — e.g. yourcompany.atlassian.net';
+    }
+    if (email.isEmpty) return 'Enter your email.';
+    if (!RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(email)) {
+      return 'Email format looks invalid.';
+    }
+    if (token.isEmpty) return 'Paste your API token.';
+    if (token.length < 20) {
+      return 'That token looks too short — paste the full API token.';
+    }
+    return null;
+  }
+
   Future<void> _connect() async {
+    final validationError = _validate();
+    if (validationError != null) {
+      setState(() => _error = validationError);
+      return;
+    }
     setState(() {
       _error = null;
       _busy = true;

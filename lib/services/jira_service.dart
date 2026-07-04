@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../models/ticket.dart';
 import '../models/settings.dart';
@@ -27,21 +28,34 @@ class JiraService {
     return {
       'Authorization': 'Basic $basic',
       'Accept': 'application/json',
-      'Content-Type': 'application/json',
     };
   }
 
-  /// Fetch issues for a given JQL. Returns a typed result instead of throwing,
-  /// so the UI can keep showing cached data on failure.
+  /// Fetch issues for a given JQL using the current /search/jql endpoint
+  /// (the old /rest/api/3/search was retired by Atlassian).
+  /// Returns a typed result instead of throwing, so the UI can keep showing
+  /// cached data on failure — and includes the real status code + body snippet
+  /// in the message so errors are diagnosable.
   Future<SyncResult> search(String jql, {int maxResults = 100}) async {
+    if (creds.email.trim().isEmpty || creds.token.trim().isEmpty) {
+      return const SyncResult([],
+          error: SyncErrorKind.auth,
+          message: 'Missing email or token — reconnect.');
+    }
+
     final uri = Uri.https(creds.cleanDomain, '/rest/api/3/search/jql', {
       'jql': jql,
       'maxResults': '$maxResults',
       'fields': _fields,
     });
 
+    debugPrint('[Jira] GET $uri');
+
     try {
-      final res = await http.get(uri, headers: _headers).timeout(const Duration(seconds: 20));
+      final res =
+          await http.get(uri, headers: _headers).timeout(const Duration(seconds: 20));
+
+      debugPrint('[Jira] status ${res.statusCode}');
 
       if (res.statusCode == 200) {
         final data = jsonDecode(res.body) as Map<String, dynamic>;
@@ -50,24 +64,37 @@ class JiraService {
             .toList();
         return SyncResult(issues);
       }
-      if (res.statusCode == 401 || res.statusCode == 403) {
+      if (res.statusCode == 401) {
         return const SyncResult([],
-            error: SyncErrorKind.auth, message: 'Your Jira token expired or is invalid.');
+            error: SyncErrorKind.auth,
+            message: '401 Unauthorized — check email + API token.');
       }
+      if (res.statusCode == 403) {
+        return const SyncResult([],
+            error: SyncErrorKind.auth,
+            message: '403 Forbidden — the token is missing a required scope.');
+      }
+      // Any other status: include a snippet of the body so it's diagnosable.
+      final snippet =
+          res.body.length > 200 ? '${res.body.substring(0, 200)}…' : res.body;
       return SyncResult(const [],
-          error: SyncErrorKind.server, message: 'Jira returned ${res.statusCode}.');
+          error: SyncErrorKind.server,
+          message: 'Jira returned ${res.statusCode}: $snippet');
     } catch (e) {
+      debugPrint('[Jira] exception: $e');
       return SyncResult(const [],
-          error: SyncErrorKind.network, message: 'Could not reach Jira. Check your connection.');
+          error: SyncErrorKind.network,
+          message: 'Could not reach Jira: ${e.runtimeType}');
     }
   }
 
-  /// Fetch a single ticket by key (used by "open / add by key").
+  /// Fetch a single ticket by key (used by "add by key" / estimate lane).
   Future<Ticket?> fetchOne(String key, {bool asEstimate = false}) async {
-    final uri = Uri.https(creds.cleanDomain, '/rest/api/3/issue/$key',
-        {'fields': _fields});
+    final uri =
+        Uri.https(creds.cleanDomain, '/rest/api/3/issue/$key', {'fields': _fields});
     try {
-      final res = await http.get(uri, headers: _headers).timeout(const Duration(seconds: 15));
+      final res =
+          await http.get(uri, headers: _headers).timeout(const Duration(seconds: 15));
       if (res.statusCode == 200) {
         return Ticket.fromJson(jsonDecode(res.body) as Map<String, dynamic>,
             isEstimateRequest: asEstimate);
@@ -76,18 +103,18 @@ class JiraService {
     return null;
   }
 
-  /// Build the JQL for the "My tickets" scope.
+  /// JQL for the "My tickets" scope: tickets ASSIGNED to you and still open.
   static String myJql(String customJql) {
     if (customJql.trim().isNotEmpty) return customJql.trim();
-    return 'assignee = currentUser() OR reporter = currentUser() ORDER BY updated DESC';
+    return 'assignee = currentUser() AND resolution = EMPTY ORDER BY updated DESC';
   }
 
-  /// Build the JQL for the "Team" scope from a list of member emails.
+  /// JQL for the "Team" scope from a list of member emails.
   static String teamJql(List<TeamMember> team) {
     final emails = team.map((m) => '"${m.email}"').join(', ');
     if (emails.isEmpty) {
-      return 'assignee = currentUser() ORDER BY updated DESC';
+      return 'assignee = currentUser() AND resolution = EMPTY ORDER BY updated DESC';
     }
-    return 'assignee in ($emails) ORDER BY updated DESC';
+    return 'assignee in ($emails) AND resolution = EMPTY ORDER BY updated DESC';
   }
 }

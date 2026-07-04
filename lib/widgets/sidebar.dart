@@ -30,7 +30,7 @@ class Sidebar extends StatelessWidget {
           ],
           _label('Show statuses'),
           ...AppColors.status.keys
-              .where((s) => s != 'Estimate Requested')
+              .where((s) => s != 'Needs Attention')
               .map((s) => _statusRow(context, app, s)),
           const _Divider(),
           _label('Projects'),

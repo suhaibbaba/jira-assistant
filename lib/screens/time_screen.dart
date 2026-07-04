@@ -62,7 +62,8 @@ class _TimeScreenState extends State<TimeScreen> {
                     child: DropdownButtonFormField<String>(
                       value: _ticketKey,
                       isExpanded: true,
-                      hint: const Text('Ticket', style: TextStyle(fontSize: 13)),
+                      hint:
+                          const Text('Ticket', style: TextStyle(fontSize: 13)),
                       decoration: _fieldDecoration('Ticket'),
                       items: [
                         for (final k in ticketKeys)
@@ -113,7 +114,8 @@ class _TimeScreenState extends State<TimeScreen> {
           const SizedBox(height: 20),
           Row(
             children: [
-              _label("Today — ${DateFormat('EEE, MMM d').format(DateTime.now())}"),
+              _label(
+                  "Today — ${DateFormat('EEE, MMM d').format(DateTime.now())}"),
               const Spacer(),
               Text('${_fmt(total)}h total',
                   style: const TextStyle(
@@ -166,8 +168,8 @@ class _TimeScreenState extends State<TimeScreen> {
               style: const TextStyle(fontSize: 12, color: AppColors.text2)),
           const Spacer(),
           Text('${_fmt(l.hours)}h',
-              style: const TextStyle(
-                  fontSize: 13, fontWeight: FontWeight.w600)),
+              style:
+                  const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
           IconButton(
             icon: const Icon(Icons.close, size: 15, color: AppColors.text3),
             onPressed: () => app.tracker.remove(l).then((_) => setState(() {})),
@@ -220,6 +222,7 @@ class _TimeScreenState extends State<TimeScreen> {
   InputDecoration _fieldDecoration(String hint) => InputDecoration(
         labelText: hint,
         labelStyle: const TextStyle(fontSize: 12, color: AppColors.text2),
+        hintStyle: const TextStyle(fontSize: 12, color: AppColors.text3),
         isDense: true,
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 12, vertical: 10),

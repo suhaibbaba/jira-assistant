@@ -13,13 +13,6 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   final _name = TextEditingController();
   final _email = TextEditingController();
-  final _aiKey = TextEditingController();
-
-  @override
-  void initState() {
-    super.initState();
-    _aiKey.text = context.read<AppState>().aiApiKey;
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -51,7 +44,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ]),
           _label('General'),
           _block(children: [
-            _stepperRow('Morning digest time', s.morningDigestTime, () {}, () {},
+            _stepperRow(
+                'Morning digest time', s.morningDigestTime, () {}, () {},
                 editable: false),
             _segRow('Sync interval', ['5m', '15m', '30m'],
                 _syncIndex(s.syncIntervalMinutes), (i) {
@@ -64,50 +58,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
               app.saveSettings();
             }),
           ]),
-          _label('Jarvis AI (optional)'),
-          _block(children: [
-            _rowContainer(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Open-ended questions (e.g. “summarize project X”) use Claude. '
-                    'Only compact ticket lines are sent — no descriptions. '
-                    'Leave blank to keep everything offline; commands still work.',
-                    style: TextStyle(fontSize: 11, color: AppColors.text2, height: 1.4),
-                  ),
-                  const SizedBox(height: 10),
-                  TextField(
-                    controller: _aiKey,
-                    obscureText: true,
-                    style: const TextStyle(fontSize: 12),
-                    decoration: InputDecoration(
-                      hintText: 'Anthropic API key (optional)',
-                      isDense: true,
-                      contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 10),
-                      border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8)),
-                    ),
-                    onSubmitted: (v) => app.setAiKey(v),
-                  ),
-                  const SizedBox(height: 8),
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: FilledButton(
-                      onPressed: () => app.setAiKey(_aiKey.text),
-                      child: const Text('Save key'),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ]),
           const SizedBox(height: 20),
           Center(
             child: TextButton(
-              onPressed: () => app.signOut(),
-              child: const Text('Disconnect Jira account',
+              onPressed: () async {
+                await app.signOut();
+                if (context.mounted) {
+                  // Settings is a pushed route — pop back to root so the
+                  // login screen (swapped in underneath) becomes visible.
+                  Navigator.of(context).popUntil((r) => r.isFirst);
+                }
+              },
+              child: const Text('Disconnect & erase all data',
                   style: TextStyle(color: Color(0xFFDC2626))),
             ),
           ),
@@ -174,11 +136,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
             r.alertEnabled ? '${r.thresholdDays}d' : '—',
             enabled: r.alertEnabled,
             onMinus: () {
-              setState(() => r.thresholdDays = (r.thresholdDays - 1).clamp(1, 30));
+              setState(
+                  () => r.thresholdDays = (r.thresholdDays - 1).clamp(1, 30));
               app.saveSettings();
             },
             onPlus: () {
-              setState(() => r.thresholdDays = (r.thresholdDays + 1).clamp(1, 30));
+              setState(
+                  () => r.thresholdDays = (r.thresholdDays + 1).clamp(1, 30));
               app.saveSettings();
             },
           ),
@@ -196,7 +160,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
               controller: _name,
               style: const TextStyle(fontSize: 12),
               decoration: const InputDecoration(
-                  hintText: 'Name', isDense: true, border: InputBorder.none),
+                  hintText: 'Name',
+                  hintStyle:
+                      const TextStyle(fontSize: 12, color: AppColors.text3),
+                  isDense: true,
+                  border: InputBorder.none),
             ),
           ),
           Expanded(
@@ -205,13 +173,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
               style: const TextStyle(fontSize: 12),
               decoration: const InputDecoration(
                   hintText: 'email@company.com',
+                  hintStyle:
+                      const TextStyle(fontSize: 12, color: AppColors.text3),
                   isDense: true,
                   border: InputBorder.none),
             ),
           ),
           GestureDetector(
             onTap: () {
-              if (_name.text.trim().isEmpty || _email.text.trim().isEmpty) return;
+              if (_name.text.trim().isEmpty || _email.text.trim().isEmpty)
+                return;
               app.addTeamMember(_name.text.trim(), _email.text.trim());
               _name.clear();
               _email.clear();
@@ -264,8 +235,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Widget _stepperRow(String label, String value, VoidCallback onMinus,
-      VoidCallback onPlus,
+  Widget _stepperRow(
+      String label, String value, VoidCallback onMinus, VoidCallback onPlus,
       {bool editable = true}) {
     return _rowContainer(
       child: Row(
@@ -296,10 +267,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   GestureDetector(
                     onTap: () => onSelect(i),
                     child: Container(
-                      padding:
-                          const EdgeInsets.symmetric(horizontal: 11, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 11, vertical: 4),
                       decoration: BoxDecoration(
-                        color: selected == i ? Colors.white : Colors.transparent,
+                        color:
+                            selected == i ? Colors.white : Colors.transparent,
                         borderRadius: BorderRadius.circular(5),
                         boxShadow: selected == i
                             ? [
@@ -329,8 +301,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget _rowContainer({required Widget child}) => Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: const BoxDecoration(
-          border:
-              Border(bottom: BorderSide(color: AppColors.separator, width: 0.5)),
+          border: Border(
+              bottom: BorderSide(color: AppColors.separator, width: 0.5)),
         ),
         child: child,
       );
@@ -341,8 +313,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
           width: 32,
           height: 19,
           decoration: BoxDecoration(
-            color:
-                value ? AppColors.priority['Low'] : Colors.black.withOpacity(0.15),
+            color: value
+                ? AppColors.priority['Low']
+                : Colors.black.withOpacity(0.15),
             borderRadius: BorderRadius.circular(10),
           ),
           child: AnimatedAlign(
@@ -352,8 +325,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
               margin: const EdgeInsets.all(2),
               width: 15,
               height: 15,
-              decoration:
-                  const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+              decoration: const BoxDecoration(
+                  color: Colors.white, shape: BoxShape.circle),
             ),
           ),
         ),
