@@ -12,7 +12,7 @@ dependencies:
   flutter_localizations:
     sdk: flutter
   http: ^1.2.0                      # Jira REST API calls
-  flutter_secure_storage: ^9.2.2   # Keychain (Mac) / Credential Locker (Windows)
+  flutter_secure_storage: ^10.3.1   # Keychain (Mac) / Credential Locker (Windows)
   shared_preferences: ^2.2.3       # Settings, attention items, time logs, cache
   url_launcher: ^6.2.6             # Open tickets in the browser
   intl: ^0.20.2                    # Date / business-day math (pinned by flutter_localizations)
@@ -34,6 +34,6 @@ msix_config:
   display_name: Xngage - Jira Assistance
   publisher_display_name: Xngage - Jira Assistance
   identity_name: com.triage.app
-  msix_version: 1.3.0.0
+  msix_version: 1.7.0.0
   capabilities: internetClient
   install_certificate: false
