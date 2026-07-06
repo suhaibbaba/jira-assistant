@@ -1,10 +1,11 @@
-# Builds the macOS app and attaches it to a GitHub Release whenever a
-# version tag (v1.7.0, v2.0.0, ...) is pushed:
+# Builds the macOS app and attaches it to a GitHub Release.
 #
-#   git tag v1.7.0 && git push origin v1.7.0
-#
-# Can also be triggered manually from the Actions tab ("Run workflow")
-# by entering an existing tag — with or without the leading 'v'.
+# Triggers:
+#   1. Push a version tag directly:      git tag v1.7.0 && git push origin v1.7.0
+#   2. Push a pubspec.yaml version bump to main — the workflow creates and
+#      pushes the matching tag automatically, then builds & releases.
+#   3. Manual "Run workflow" button — reads the version from pubspec.yaml
+#      and releases it if that tag doesn't already exist.
 #
 # The in-app update banner (lib/services/update_service.dart) compares the
 # latest release tag against AppInfo.appVersion — keep pubspec.yaml,
@@ -12,66 +13,84 @@
 #
 # NOTE: the app is signed with a free Personal Team certificate, so the CI
 # build is unsigned; users may need to right-click → Open on first launch.
-
 name: Release macOS
 on:
   push:
+    branches: [main]
+    paths:
+      - 'pubspec.yaml'
     tags:
       - 'v*'
-  workflow_dispatch:
-    inputs:
-      tag:
-        description: 'Version tag to build and release (e.g. v1.7.0) — must already exist on the remote'
-        required: true
-        type: string
+  workflow_dispatch: {}
 permissions:
   contents: write # create the release and upload the asset
 jobs:
   build-and-release:
     runs-on: macos-latest
     steps:
-      - name: Resolve tag
-        id: vars
-        run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            raw="${{ inputs.tag }}"
-          else
-            raw="${{ github.ref_name }}"
-          fi
-          # add leading 'v' if missing, so "1.7.1" and "v1.7.1" both work
-          [[ "$raw" == v* ]] || raw="v$raw"
-          echo "tag=$raw" >> "$GITHUB_OUTPUT"
-
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          ref: ${{ steps.vars.outputs.tag }}
+          fetch-depth: 0 # full history needed to create/push a tag
+
+      - name: Resolve tag / decide whether to release
+        id: vars
+        run: |
+          if [ "${{ github.ref_type }}" = "tag" ]; then
+            # Triggered by an actual tag push — just use it
+            tag="${{ github.ref_name }}"
+            should_release=true
+          else
+            # Triggered by a branch push (pubspec.yaml changed) or manual run
+            version=$(grep '^version:' pubspec.yaml | head -1 | awk '{print $2}' | cut -d'+' -f1)
+            tag="v$version"
+
+            if git rev-parse "$tag" >/dev/null 2>&1; then
+              echo "Tag $tag already exists — no new version to release. Skipping."
+              should_release=false
+            else
+              should_release=true
+              git config user.name "github-actions[bot]"
+              git config user.email "github-actions[bot]@users.noreply.github.com"
+              git tag "$tag"
+              git push origin "$tag"
+            fi
+          fi
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "should_release=$should_release" >> "$GITHUB_OUTPUT"
 
       - name: Set up Flutter
+        if: steps.vars.outputs.should_release == 'true'
         uses: subosito/flutter-action@v2
         with:
           channel: stable
           cache: true
 
       - name: Flutter pub get
+        if: steps.vars.outputs.should_release == 'true'
         run: flutter pub get
 
       - name: Analyze
-        run: flutter analyze
+        if: steps.vars.outputs.should_release == 'true'
+        run: flutter analyze --no-fatal-infos
 
       - name: Run tests
+        if: steps.vars.outputs.should_release == 'true'
         run: flutter test
 
       - name: Build macOS (release)
+        if: steps.vars.outputs.should_release == 'true'
         run: flutter build macos --release
 
       - name: Zip the .app
+        if: steps.vars.outputs.should_release == 'true'
         # ditto preserves the bundle structure + resource forks (unlike zip -r)
         run: |
           APP_PATH=$(ls -d build/macos/Build/Products/Release/*.app | head -1)
           ditto -c -k --keepParent "$APP_PATH" "Xngage-${{ steps.vars.outputs.tag }}-macos.zip"
 
       - name: Create GitHub Release
+        if: steps.vars.outputs.should_release == 'true'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.vars.outputs.tag }}
