@@ -28,7 +28,7 @@ class TriageApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Triage',
+      title: 'Xngage — Jira Assistance',
       debugShowCheckedModeBanner: false,
       theme: buildAppTheme(),
       home: const _Root(),

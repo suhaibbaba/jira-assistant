@@ -95,10 +95,10 @@ class _ConnectScreenState extends State<ConnectScreen> {
                 children: [
                   const Text('🎯', style: TextStyle(fontSize: 34), textAlign: TextAlign.center),
                   const SizedBox(height: 8),
-                  const Text('Triage',
+                  const Text('Xngage — Jira Assistance',
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                          fontSize: 22,
+                          fontSize: 20,
                           fontWeight: FontWeight.w800,
                           color: AppColors.text)),
                   const SizedBox(height: 4),

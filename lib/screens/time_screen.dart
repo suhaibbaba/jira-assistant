@@ -15,9 +15,22 @@ class TimeScreen extends StatefulWidget {
 }
 
 class _TimeScreenState extends State<TimeScreen> {
-  String? _ticketKey;
+  /// Sentinel dropdown value for "no ticket — note only".
+  static const _noteOption = '__note__';
+
+  String? _ticketKey = _noteOption; // note option is first AND the default
   final _hours = TextEditingController();
+  final _note = TextEditingController();
   WorkType _type = WorkType.development;
+
+  bool get _isNoteMode => _ticketKey == _noteOption;
+
+  @override
+  void dispose() {
+    _hours.dispose();
+    _note.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -63,9 +76,13 @@ class _TimeScreenState extends State<TimeScreen> {
                     child: DropdownButtonFormField<String>(
                       value: _ticketKey,
                       isExpanded: true,
-                      hint: const Text('Ticket', style: TextStyle(fontSize: 13)),
                       decoration: appInputDecoration(label: 'Ticket'),
                       items: [
+                        // First option: work without a Jira ticket.
+                        const DropdownMenuItem(
+                            value: _noteOption,
+                            child: Text('📝 No ticket — add note',
+                                style: TextStyle(fontSize: 13))),
                         for (final k in ticketKeys)
                           DropdownMenuItem(
                               value: k,
@@ -87,6 +104,14 @@ class _TimeScreenState extends State<TimeScreen> {
                   ),
                 ]),
                 const SizedBox(height: 10),
+                if (_isNoteMode) ...[
+                  AppTextField(
+                    controller: _note,
+                    label: 'What did you work on?',
+                    hint: 'e.g. Sprint planning, interview, helping QA…',
+                  ),
+                  const SizedBox(height: 10),
+                ],
                 DropdownButtonFormField<WorkType>(
                   value: _type,
                   isExpanded: true,
@@ -108,7 +133,8 @@ class _TimeScreenState extends State<TimeScreen> {
           const SizedBox(height: 20),
           Row(
             children: [
-              _label("Today — ${DateFormat('EEE, MMM d').format(DateTime.now())}"),
+              _label(
+                  "Today — ${DateFormat('EEE, MMM d').format(DateTime.now())}"),
               const Spacer(),
               Text('${_fmt(total)}h total',
                   style: const TextStyle(
@@ -146,23 +172,30 @@ class _TimeScreenState extends State<TimeScreen> {
         children: [
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+            constraints: const BoxConstraints(maxWidth: 220),
             decoration: BoxDecoration(
-                color: AppColors.accentSoft,
+                color: l.isNoteOnly
+                    ? const Color(0x22FF9F0A)
+                    : AppColors.accentSoft,
                 borderRadius: BorderRadius.circular(4)),
-            child: Text(l.ticketKey,
-                style: const TextStyle(
-                    fontFamily: 'monospace',
+            child: Text(l.isNoteOnly ? '📝 ${l.displayLabel}' : l.ticketKey,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                    fontFamily: l.isNoteOnly ? null : 'monospace',
                     fontSize: 11,
                     fontWeight: FontWeight.w600,
-                    color: AppColors.accent)),
+                    color: l.isNoteOnly
+                        ? const Color(0xFFB25E00)
+                        : AppColors.accent)),
           ),
           const SizedBox(width: 10),
           Text(l.type.label,
               style: const TextStyle(fontSize: 12, color: AppColors.text2)),
           const Spacer(),
           Text('${_fmt(l.hours)}h',
-              style: const TextStyle(
-                  fontSize: 13, fontWeight: FontWeight.w600)),
+              style:
+                  const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
           IconButton(
             icon: const Icon(Icons.close, size: 15, color: AppColors.text3),
             onPressed: () => app.tracker.remove(l).then((_) => setState(() {})),
@@ -173,18 +206,33 @@ class _TimeScreenState extends State<TimeScreen> {
   }
 
   void _addLog(AppState app) {
-    final key = _ticketKey;
     final h = double.tryParse(_hours.text.trim());
-    if (key == null || h == null || h <= 0) {
+    if (h == null || h <= 0) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('Enter valid hours.')));
+      return;
+    }
+    if (_isNoteMode && _note.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Write a short note about the work.')));
+      return;
+    }
+    if (!_isNoteMode && _ticketKey == null) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('Pick a ticket and enter valid hours.')));
+          content: Text('Pick a ticket, or choose the note option.')));
       return;
     }
     app.tracker
         .add(TimeLog(
-            ticketKey: key, hours: h, type: _type, loggedAt: DateTime.now()))
+      ticketKey: _isNoteMode ? '' : _ticketKey!,
+      note: _isNoteMode ? _note.text.trim() : '',
+      hours: h,
+      type: _type,
+      loggedAt: DateTime.now(),
+    ))
         .then((_) {
       _hours.clear();
+      _note.clear();
       setState(() {});
     });
   }

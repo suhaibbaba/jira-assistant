@@ -185,7 +185,43 @@ class AppState extends ChangeNotifier {
     _storage.saveCache(_tickets);
     // ignore: unawaited_futures
     _storage.saveSeenKeys(_seenKeys);
+
+    // ignore: unawaited_futures
+    _maybeSendMorningDigest();
   }
+
+  /// Fires the morning digest notification once per day, at/after the time
+  /// configured in Settings, whenever a sync runs past that time.
+  Future<void> _maybeSendMorningDigest() async {
+    if (!settings.morningDigestEnabled) return;
+    final now = DateTime.now();
+    final parts = settings.morningDigestTime.split(':');
+    final digestAt = DateTime(
+        now.year,
+        now.month,
+        now.day,
+        int.tryParse(parts[0]) ?? 8,
+        int.tryParse(parts.length > 1 ? parts[1] : '30') ?? 30);
+    if (now.isBefore(digestAt)) return;
+
+    final prefs = await SharedPreferences.getInstance();
+    final today = '${now.year}-${now.month}-${now.day}';
+    if (prefs.getString('digest_sent_on') == today) return; // once per day
+
+    final aging = agingTickets.length;
+    final fresh = newTicketCount;
+    if (aging == 0 && fresh == 0) {
+      await prefs.setString('digest_sent_on', today);
+      return; // nothing to say
+    }
+    await NotificationService.morningDigest(aging, fresh);
+    await prefs.setString('digest_sent_on', today);
+  }
+
+  /// Fire a test notification so the user can verify macOS permissions.
+  Future<void> sendTestNotification() => NotificationService.show(
+      'Test notification',
+      'Notifications are working ✓ — Xngage can alert you.');
 
   void _onSyncFailure(SyncResult result) {
     statusMessage = result.message;
@@ -288,14 +324,44 @@ class AppState extends ChangeNotifier {
     return result;
   }
 
+  /// Sidebar status counts: tickets per status in the current scope,
+  /// respecting hidden projects — but NOT the status checkboxes themselves,
+  /// so unticking a status still shows its real count.
+  Map<String, int> get statusCounts {
+    final map = <String, int>{};
+    for (final t in _visibleTickets) {
+      if (t.isEstimateRequest) continue;
+      map[t.status] = (map[t.status] ?? 0) + 1;
+    }
+    return map;
+  }
+
   /// Projects the user actually has tickets on (for the hide-list).
+  /// Counts follow the current status filter and scope, so the numbers
+  /// always match what the board can show — but hidden projects still
+  /// report their count (so you can see what you're hiding).
   Map<String, ({String name, int count})> get projectsWithCounts {
     final map = <String, ({String name, int count})>{};
+    // Ensure every project with any ticket appears, even at count 0.
     for (final t in _tickets) {
-      if (t.projectKey.isEmpty) continue;
-      final existing = map[t.projectKey];
-      map[t.projectKey] =
-          (name: t.projectName, count: (existing?.count ?? 0) + 1);
+      if (t.projectKey.isEmpty || t.isEstimateRequest) continue;
+      map.putIfAbsent(t.projectKey, () => (name: t.projectName, count: 0));
+    }
+    for (final t in _tickets) {
+      if (t.projectKey.isEmpty || t.isEstimateRequest) continue;
+      if (!settings.visibleStatuses.contains(t.status)) continue;
+      if (scope == ViewScope.team) {
+        final visibleEmails = settings.team
+            .where((m) => m.visible)
+            .map((m) => m.email.toLowerCase())
+            .toSet();
+        if (t.assigneeEmail != null &&
+            !visibleEmails.contains(t.assigneeEmail!.toLowerCase())) {
+          continue;
+        }
+      }
+      final e = map[t.projectKey]!;
+      map[t.projectKey] = (name: e.name, count: e.count + 1);
     }
     return map;
   }

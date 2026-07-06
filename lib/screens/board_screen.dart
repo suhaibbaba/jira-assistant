@@ -53,7 +53,7 @@ class _Toolbar extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const Text('Triage',
+          const Text('Xngage — Jira Assistance',
               style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
           const SizedBox(width: 6),
           Text('· ${app.settings.domain}',

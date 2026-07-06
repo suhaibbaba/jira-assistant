@@ -30,6 +30,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
     super.dispose();
   }
 
+  /// Small confirmation toast shown after any setting changes.
+  void _toastSaved() {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(const SnackBar(
+        content: Text('Settings saved ✓'),
+        duration: Duration(milliseconds: 900),
+        behavior: SnackBarBehavior.floating,
+        width: 220,
+      ));
+  }
+
   /// Add is enabled only when both fields have content.
   /// (Stricter option: replace the email check with
   ///  RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+\$').hasMatch(_email.text.trim()))
@@ -73,12 +85,38 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 _syncIndex(s.syncIntervalMinutes), (i) {
               s.syncIntervalMinutes = [5, 15, 30][i];
               app.saveSettings();
+              _toastSaved();
             }),
             _segRow('Aging counts', ['Business days', 'Calendar'],
                 s.agingUsesBusinessDays ? 0 : 1, (i) {
               s.agingUsesBusinessDays = i == 0;
               app.saveSettings();
+              _toastSaved();
             }),
+            _rowContainer(
+              child: Row(
+                children: [
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Notifications', style: TextStyle(fontSize: 12)),
+                        Text(
+                            'If the test doesn\'t appear, allow the app in '
+                            'System Settings → Notifications',
+                            style: TextStyle(
+                                fontSize: 10, color: AppColors.text2)),
+                      ],
+                    ),
+                  ),
+                  AppButton(
+                    label: 'Send test',
+                    fullWidth: false,
+                    onTap: () => app.sendTestNotification(),
+                  ),
+                ],
+              ),
+            ),
           ]),
           const SizedBox(height: 20),
           Center(
@@ -156,6 +194,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               onChanged: (v) {
                 setState(() => r.alertEnabled = v);
                 app.saveSettings();
+                _toastSaved();
               }),
           const SizedBox(width: 12),
           _stepper(
@@ -165,11 +204,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
               setState(
                   () => r.thresholdDays = (r.thresholdDays - 1).clamp(1, 30));
               app.saveSettings();
+              _toastSaved();
             },
             onPlus: () {
               setState(
                   () => r.thresholdDays = (r.thresholdDays + 1).clamp(1, 30));
               app.saveSettings();
+              _toastSaved();
             },
           ),
         ],
@@ -208,11 +249,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     app.addTeamMember(_name.text.trim(), _email.text.trim());
                     _name.clear();
                     _email.clear();
+                    _toastSaved();
                   },
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                  color: !_canAddMember ? AppColors.accent.withValues(alpha: 0.3) :  AppColors.accent,
+                  color: !_canAddMember
+                      ? AppColors.accent.withValues(alpha: 0.3)
+                      : AppColors.accent,
                   borderRadius: BorderRadius.circular(6)),
               child: const Text('+ Add',
                   style: TextStyle(
@@ -250,7 +294,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const Spacer(),
           IconButton(
             icon: const Icon(Icons.close, size: 16, color: AppColors.text3),
-            onPressed: () => app.removeTeamMember(m),
+            onPressed: () {
+              app.removeTeamMember(m);
+              _toastSaved();
+            },
           ),
         ],
       ),

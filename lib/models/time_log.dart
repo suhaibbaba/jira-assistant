@@ -27,26 +27,35 @@ extension WorkTypeLabel on WorkType {
 
 class TimeLog {
   final String ticketKey;
+  final String note;
   final double hours;
   final WorkType type;
   final DateTime loggedAt;
 
   TimeLog({
     required this.ticketKey,
+    this.note = '',
     required this.hours,
     required this.type,
     required this.loggedAt,
   });
 
+  bool get isNoteOnly => ticketKey.isEmpty;
+
+  /// What to show as the entry's title: the key, or the note.
+  String get displayLabel => isNoteOnly ? (note.isEmpty ? 'Note' : note) : ticketKey;
+
   Map<String, dynamic> toJson() => {
         'key': ticketKey,
+        'note': note,
         'hours': hours,
         'type': type.name,
         'at': loggedAt.toIso8601String(),
       };
 
   factory TimeLog.fromJson(Map<String, dynamic> j) => TimeLog(
-        ticketKey: j['key'],
+        ticketKey: j['key'] ?? '',
+        note: j['note'] ?? '',
         hours: (j['hours'] as num).toDouble(),
         type: WorkType.values.firstWhere((w) => w.name == j['type'],
             orElse: () => WorkType.other),
@@ -119,10 +128,10 @@ class TimeTracker {
       return buf.toString();
     }
 
-    // Group by ticket.
+    // Group by ticket key, or by the note text for note-only entries.
     final byTicket = <String, List<TimeLog>>{};
     for (final l in logs) {
-      byTicket.putIfAbsent(l.ticketKey, () => []).add(l);
+      byTicket.putIfAbsent(l.displayLabel, () => []).add(l);
     }
     byTicket.forEach((key, entries) {
       final h = totalHours(entries);

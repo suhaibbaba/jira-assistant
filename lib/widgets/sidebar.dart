@@ -93,7 +93,7 @@ class Sidebar extends StatelessWidget {
 
   Widget _statusRow(BuildContext context, AppState app, String status) {
     final on = app.settings.visibleStatuses.contains(status);
-    final count = app.groupedByStatus[status]?.length ?? 0;
+    final count = app.statusCounts[status] ?? 0;
     return _row(
       onTap: () => app.toggleStatusVisible(status),
       active: on,
