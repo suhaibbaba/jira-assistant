@@ -1,7 +1,7 @@
 name: triage
 description: A native Mac & Windows app for triaging Jira tickets by status and priority.
 publish_to: 'none'
-version: 1.6.0+6
+version: 1.7.0
 
 environment:
   sdk: '>=3.3.0 <4.0.0'
