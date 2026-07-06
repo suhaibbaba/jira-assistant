@@ -3,6 +3,9 @@
 #
 #   git tag v1.7.0 && git push origin v1.7.0
 #
+# Can also be triggered manually from the Actions tab ("Run workflow")
+# by entering an existing tag — with or without the leading 'v'.
+#
 # The in-app update banner (lib/services/update_service.dart) compares the
 # latest release tag against AppInfo.appVersion — keep pubspec.yaml,
 # lib/config/app_info.dart, and the tag in sync when releasing.
@@ -18,7 +21,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Version tag to build and release (e.g. v1.7.0) — must already exist'
+        description: 'Version tag to build and release (e.g. v1.7.0) — must already exist on the remote'
         required: true
         type: string
 permissions:
@@ -29,29 +32,45 @@ jobs:
     steps:
       - name: Resolve tag
         id: vars
-        run: echo "tag=${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}" >> "$GITHUB_OUTPUT"
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            raw="${{ inputs.tag }}"
+          else
+            raw="${{ github.ref_name }}"
+          fi
+          # add leading 'v' if missing, so "1.7.1" and "v1.7.1" both work
+          [[ "$raw" == v* ]] || raw="v$raw"
+          echo "tag=$raw" >> "$GITHUB_OUTPUT"
+
       - name: Checkout
         uses: actions/checkout@v4
         with:
           ref: ${{ steps.vars.outputs.tag }}
+
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
           channel: stable
           cache: true
+
       - name: Flutter pub get
         run: flutter pub get
+
       - name: Analyze
         run: flutter analyze
+
       - name: Run tests
         run: flutter test
+
       - name: Build macOS (release)
         run: flutter build macos --release
+
       - name: Zip the .app
         # ditto preserves the bundle structure + resource forks (unlike zip -r)
         run: |
           APP_PATH=$(ls -d build/macos/Build/Products/Release/*.app | head -1)
           ditto -c -k --keepParent "$APP_PATH" "Xngage-${{ steps.vars.outputs.tag }}-macos.zip"
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
