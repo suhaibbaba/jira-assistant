@@ -11,49 +11,50 @@
 # build is unsigned; users may need to right-click → Open on first launch.
 
 name: Release macOS
-
 on:
   push:
     tags:
       - 'v*'
-
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Version tag to build and release (e.g. v1.7.0) — must already exist'
+        required: true
+        type: string
 permissions:
   contents: write # create the release and upload the asset
-
 jobs:
   build-and-release:
     runs-on: macos-latest
-
     steps:
+      - name: Resolve tag
+        id: vars
+        run: echo "tag=${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}" >> "$GITHUB_OUTPUT"
       - name: Checkout
         uses: actions/checkout@v4
-
+        with:
+          ref: ${{ steps.vars.outputs.tag }}
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
           channel: stable
           cache: true
-
       - name: Flutter pub get
         run: flutter pub get
-
       - name: Analyze
         run: flutter analyze
-
       - name: Run tests
         run: flutter test
-
       - name: Build macOS (release)
         run: flutter build macos --release
-
       - name: Zip the .app
         # ditto preserves the bundle structure + resource forks (unlike zip -r)
         run: |
           APP_PATH=$(ls -d build/macos/Build/Products/Release/*.app | head -1)
-          ditto -c -k --keepParent "$APP_PATH" "Xngage-${GITHUB_REF_NAME}-macos.zip"
-
+          ditto -c -k --keepParent "$APP_PATH" "Xngage-${{ steps.vars.outputs.tag }}-macos.zip"
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ steps.vars.outputs.tag }}
           files: Xngage-*.zip
           generate_release_notes: true
