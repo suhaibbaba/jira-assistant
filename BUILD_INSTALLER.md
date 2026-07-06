@@ -1,4 +1,4 @@
-# How to turn Triage into a real installed app (Mac & Windows)
+# How to turn Xngage-Jira into a real installed app (Mac & Windows)
 
 **You build it once. After that it's a normal app — open it from Launchpad
 (Mac) or the Start Menu (Windows). No terminal, no modules, ever again.**

@@ -1,23 +1,21 @@
 import 'package:intl/intl.dart';
 
-/// A single Jira issue, plus app-local fields (manual order, local "estimate" flag).
 class Ticket {
-  final String key; // e.g. PAY-412
+  final String key;
   final String summary;
   final String description;
-  final String status; // New, Blocked, In Progress, ...
-  final String priority; // Highest, High, Medium, Low, Lowest, None
-  final String issueType; // Bug, Task, Story...
+  final String status;
+  final String priority;
+  final String issueType;
   final String projectKey;
   final String projectName;
   final String? assigneeName;
   final String? assigneeEmail;
   final DateTime? updated;
-  final DateTime? statusChangedAt; // when it last entered the current status
+  final DateTime? statusChangedAt;
 
-  // App-local only (never written back to Jira):
-  final bool isEstimateRequest; // manually added "estimate requested" lane
-  int manualOrder; // personal rank within its status+priority bucket
+  final bool isEstimateRequest;
+  int manualOrder;
 
   Ticket({
     required this.key,
@@ -36,12 +34,10 @@ class Ticket {
     this.manualOrder = 0,
   });
 
-  /// Build a Ticket from a Jira REST API v3 issue JSON object.
   factory Ticket.fromJson(Map<String, dynamic> json, {bool isEstimateRequest = false}) {
     final fields = (json['fields'] ?? {}) as Map<String, dynamic>;
 
     String text(dynamic node) {
-      // Jira v3 descriptions are Atlassian Document Format (ADF). Extract plain text.
       if (node == null) return '';
       if (node is String) return node;
       final buffer = StringBuffer();
@@ -67,7 +63,6 @@ class Ticket {
     DateTime? parse(dynamic s) =>
         (s is String && s.isNotEmpty) ? DateTime.tryParse(s)?.toLocal() : null;
 
-    // Time-in-status: prefer statuscategorychangedate, fall back to updated.
     final statusChanged =
         parse(fields['statuscategorychangedate']) ?? parse(fields['updated']);
 
@@ -91,7 +86,6 @@ class Ticket {
     );
   }
 
-  /// Rank used to sort within a status section (lower = higher priority).
   static const _priorityRank = {
     'Highest': 0,
     'High': 1,
@@ -103,14 +97,11 @@ class Ticket {
 
   int get priorityRank => _priorityRank[priority] ?? 5;
 
-  /// How long the ticket has been sitting in its current status.
   Duration? get timeInStatus =>
       statusChangedAt == null ? null : DateTime.now().difference(statusChangedAt!);
 
-  /// Whole calendar days in the current status.
   int get calendarDaysInStatus => timeInStatus == null ? 0 : timeInStatus!.inHours ~/ 24;
 
-  /// Business days (Mon–Fri) elapsed since entering the current status.
   int get businessDaysInStatus {
     if (statusChangedAt == null) return 0;
     var count = 0;
@@ -124,7 +115,6 @@ class Ticket {
     return count;
   }
 
-  /// Short label like "3d" or "5h" for the time-in-status pill.
   String get ageLabel {
     final t = timeInStatus;
     if (t == null) return '';

@@ -4,7 +4,6 @@ import 'package:http/http.dart' as http;
 import 'package:triage/models/ticket.dart';
 import 'package:triage/models/settings.dart';
 
-/// Typed outcome of a sync so the UI can react differently to auth vs network errors.
 enum SyncErrorKind { none, network, auth, server, unknown }
 
 class SyncResult {
@@ -31,11 +30,6 @@ class JiraService {
     };
   }
 
-  /// Fetch issues for a given JQL using the current /search/jql endpoint
-  /// (the old /rest/api/3/search was retired by Atlassian).
-  /// Returns a typed result instead of throwing, so the UI can keep showing
-  /// cached data on failure — and includes the real status code + body snippet
-  /// in the message so errors are diagnosable.
   Future<SyncResult> search(String jql, {int maxResults = 100}) async {
     if (creds.email.trim().isEmpty || creds.token.trim().isEmpty) {
       return const SyncResult([],
@@ -74,7 +68,6 @@ class JiraService {
             error: SyncErrorKind.auth,
             message: '403 Forbidden — the token is missing a required scope.');
       }
-      // Any other status: include a snippet of the body so it's diagnosable.
       final snippet =
           res.body.length > 200 ? '${res.body.substring(0, 200)}…' : res.body;
       return SyncResult(const [],
@@ -88,7 +81,6 @@ class JiraService {
     }
   }
 
-  /// Fetch a single ticket by key (used by "add by key" / estimate lane).
   Future<Ticket?> fetchOne(String key, {bool asEstimate = false}) async {
     final uri =
         Uri.https(creds.cleanDomain, '/rest/api/3/issue/$key', {'fields': _fields});
@@ -103,13 +95,11 @@ class JiraService {
     return null;
   }
 
-  /// JQL for the "My tickets" scope: tickets ASSIGNED to you and still open.
   static String myJql(String customJql) {
     if (customJql.trim().isNotEmpty) return customJql.trim();
     return 'assignee = currentUser() AND resolution = EMPTY ORDER BY updated DESC';
   }
 
-  /// JQL for the "Team" scope from a list of member emails.
   static String teamJql(List<TeamMember> team) {
     final emails = team.map((m) => '"${m.email}"').join(', ');
     if (emails.isEmpty) {

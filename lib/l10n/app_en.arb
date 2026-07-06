@@ -1,0 +1,245 @@
+{
+  "@@locale": "en",
+
+  "commonCancel": "Cancel",
+  "commonAdd": "Add",
+  "commonDone": "Done",
+  "commonEmDash": "—",
+
+  "boardToolbarDomain": "· {domain}",
+  "@boardToolbarDomain": {
+    "placeholders": {
+      "domain": { "type": "String" }
+    }
+  },
+  "boardTooltipTimeTracking": "Time tracking",
+  "boardTooltipMorningDigest": "Morning digest",
+  "boardTooltipAddAttention": "Add ticket that needs attention",
+  "boardTooltipSettings": "Settings",
+  "boardAddDialogTitle": "Needs attention",
+  "boardAddDialogHint": "Add a ticket someone sent you (e.g. for an estimate). The time is recorded automatically.",
+  "boardAddTicketKeyLabel": "Ticket key",
+  "boardAddTicketKeyHint": "PAY-123",
+  "boardAddSentByLabel": "Sent by",
+  "boardAddSentByHint": "e.g. Product Owner, Sarah…",
+  "boardAddUnknownSender": "Unknown",
+  "boardTicketNotFound": "Could not find ticket \"{key}\".",
+  "@boardTicketNotFound": {
+    "placeholders": {
+      "key": { "type": "String" }
+    }
+  },
+  "boardSyncedNever": "never",
+  "boardSyncedJustNow": "just now",
+  "boardSyncedMinutesAgo": "{minutes}m ago",
+  "@boardSyncedMinutesAgo": {
+    "placeholders": {
+      "minutes": { "type": "int" }
+    }
+  },
+  "boardSyncedHoursAgo": "{hours}h ago",
+  "@boardSyncedHoursAgo": {
+    "placeholders": {
+      "hours": { "type": "int" }
+    }
+  },
+  "boardSyncedLabel": "Synced {when}",
+  "@boardSyncedLabel": {
+    "placeholders": {
+      "when": { "type": "String" }
+    }
+  },
+  "boardConnAuthExpired": "Your Jira token expired — reconnect to continue.",
+  "boardConnOffline": "Offline — showing last synced data.",
+  "boardConnReconnect": "Reconnect",
+  "boardNewTicketsBanner": "{count} new tickets need attention",
+  "@boardNewTicketsBanner": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "boardNoTicketsMatch": "No tickets match your current filters.",
+  "boardDragToReorder": "⇅ drag to reorder",
+  "statusNeedsAttention": "Needs Attention",
+
+  "connectSubtitle": "Read-only · your Jira stays untouched",
+  "connectErrorBanner": "⚠️ {error}",
+  "@connectErrorBanner": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "connectErrDomainEmpty": "Enter your Jira domain.",
+  "connectErrDomainInvalid": "Domain looks invalid — e.g. yourcompany.atlassian.net",
+  "connectErrEmailEmpty": "Enter your email.",
+  "connectErrEmailInvalid": "Email format looks invalid.",
+  "connectErrTokenEmpty": "Paste your API token.",
+  "connectErrTokenShort": "That token looks too short — paste the full API token.",
+  "connectErrAuth": "Could not authenticate. Check email and API token.",
+  "connectErrNetwork": "Could not reach Jira.",
+  "connectDomainLabel": "Jira Domain",
+  "connectDomainHint": "yourcompany.atlassian.net",
+  "connectEmailLabel": "Email",
+  "connectEmailHint": "you@company.com",
+  "connectTokenLabel": "API Token",
+  "connectTokenHint": "Paste your API token",
+  "connectJqlLabel": "JQL filter (optional)",
+  "connectJqlHint": "project = \"ABC\" AND sprint in openSprints()",
+  "connectLoadTickets": "Load Tickets  →",
+  "connectGetToken": "🔒 Get an API token ↗",
+
+  "settingsTitle": "Settings",
+  "settingsSavedToast": "Settings saved ✓",
+  "settingsSectionAging": "Aging alerts — per status",
+  "settingsSectionTeam": "Team members",
+  "settingsSectionGeneral": "General",
+  "settingsAgingNewHint": "Untriaged — most urgent",
+  "settingsAgingInProgressHint": "Usually off — being worked",
+  "settingsDaysShort": "{days}d",
+  "@settingsDaysShort": {
+    "placeholders": {
+      "days": { "type": "int" }
+    }
+  },
+  "settingsMorningDigestTime": "Morning digest time",
+  "settingsSyncInterval": "Sync interval",
+  "settingsSync5m": "5m",
+  "settingsSync15m": "15m",
+  "settingsSync30m": "30m",
+  "settingsAgingCounts": "Aging counts",
+  "settingsBusinessDays": "Business days",
+  "settingsCalendarDays": "Calendar",
+  "settingsNameHint": "Name",
+  "settingsEmailHint": "email@company.com",
+  "settingsAddMember": "+ Add",
+  "settingsDisconnect": "Disconnect & erase all data",
+
+  "timeTitle": "⏱️ Time Tracking",
+  "timeExport": "Export",
+  "timeSectionLog": "Log time",
+  "timeTicketLabel": "Ticket",
+  "timeNoTicketOption": "📝 No ticket — add note",
+  "timeHoursLabel": "Hours",
+  "timeNoteLabel": "What did you work on?",
+  "timeNoteHint": "e.g. Sprint planning, interview, helping QA…",
+  "timeWorkTypeLabel": "Work type",
+  "timeAddEntry": "Add entry",
+  "timeTodayLabel": "Today — {date}",
+  "@timeTodayLabel": {
+    "placeholders": {
+      "date": { "type": "String" }
+    }
+  },
+  "timeTotalHours": "{hours}h total",
+  "@timeTotalHours": {
+    "placeholders": {
+      "hours": { "type": "String" }
+    }
+  },
+  "timeNothingLogged": "Nothing logged yet today.",
+  "timeErrInvalidHours": "Enter valid hours.",
+  "timeErrNoteRequired": "Write a short note about the work.",
+  "timeErrPickTicket": "Pick a ticket, or choose the note option.",
+  "timeSummaryTitle": "End of Day Summary",
+  "timeCopied": "Copied to clipboard ✓",
+  "timeNotePrefix": "📝 {label}",
+  "@timeNotePrefix": {
+    "placeholders": {
+      "label": { "type": "String" }
+    }
+  },
+  "timeHoursShort": "{hours}h",
+  "@timeHoursShort": {
+    "placeholders": {
+      "hours": { "type": "String" }
+    }
+  },
+  "workTypeMeeting": "Meeting",
+  "workTypeDevelopment": "Development",
+  "workTypeCodeReview": "Code Review",
+  "workTypeBugFix": "Bug Fix",
+  "workTypeDocumentation": "Documentation",
+  "workTypeOther": "Other",
+
+  "digestTitle": "☀️ Good morning",
+  "digestDateSeparator": "· {date}",
+  "@digestDateSeparator": {
+    "placeholders": {
+      "date": { "type": "String" }
+    }
+  },
+  "digestAgingBanner": "{count} tickets are aging",
+  "@digestAgingBanner": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "digestAgingSubtitle": "Past your threshold · oldest first",
+  "digestSectionAging": "Aging — needs attention",
+  "digestSectionNew": "New since yesterday",
+  "digestFooter": "In Progress & Review never age — they’re being worked",
+
+  "sidebarScopeLabel": "My / Team",
+  "sidebarMyTickets": "My tickets",
+  "sidebarTeam": "Team",
+  "sidebarTeammates": "Teammates",
+  "sidebarShowStatuses": "Show statuses",
+  "sidebarProjects": "Projects",
+
+  "cardAgePill": "⏳ {age} in {status}",
+  "@cardAgePill": {
+    "placeholders": {
+      "age": { "type": "String" },
+      "status": { "type": "String" }
+    }
+  },
+  "cardProjectOnly": "📁 {project}",
+  "@cardProjectOnly": {
+    "placeholders": {
+      "project": { "type": "String" }
+    }
+  },
+  "cardProjectWithType": "📁 {project} · {type}",
+  "@cardProjectWithType": {
+    "placeholders": {
+      "project": { "type": "String" },
+      "type": { "type": "String" }
+    }
+  },
+  "cardAttentionFrom": "👤 from {sender} · sent {ago}",
+  "@cardAttentionFrom": {
+    "placeholders": {
+      "sender": { "type": "String" },
+      "ago": { "type": "String" }
+    }
+  },
+  "cardMarkDone": "✓ Done",
+
+  "detailUnassigned": "Unassigned",
+  "detailDescription": "Description",
+  "detailAssignee": "Assignee",
+  "detailProject": "Project",
+  "detailInStatus": "In status",
+  "detailType": "Type",
+  "detailProjectValue": "📁 {project}",
+  "@detailProjectValue": {
+    "placeholders": {
+      "project": { "type": "String" }
+    }
+  },
+  "detailTypeValue": "🐞 {type}",
+  "@detailTypeValue": {
+    "placeholders": {
+      "type": { "type": "String" }
+    }
+  },
+  "detailOpenInJira": "Open in Jira  ↗",
+
+  "updateBanner": "v{version} available — Download ↗",
+  "@updateBanner": {
+    "placeholders": {
+      "version": { "type": "String" }
+    }
+  },
+  "updateDismissTooltip": "Dismiss this version"
+}

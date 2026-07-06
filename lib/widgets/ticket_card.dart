@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:triage/l10n/gen/app_localizations.dart';
 import 'package:triage/models/ticket.dart';
 import 'package:triage/models/attention_item.dart';
 import 'package:triage/theme/app_theme.dart';
+import 'package:triage/widgets/ui/ui.dart';
 
-/// A single ticket card. The key text and the link icon both open the ticket
-/// in the browser. Tapping elsewhere opens the detail popup.
-/// For "Needs Attention" tickets, shows who sent it + when, and a Done button.
 class TicketCard extends StatefulWidget {
   final Ticket ticket;
   final VoidCallback onOpenInBrowser;
@@ -51,7 +50,7 @@ class _TicketCardState extends State<TicketCard> {
           margin: const EdgeInsets.only(bottom: 8),
           decoration: BoxDecoration(
             color: AppColors.card,
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: AppRadius.br10,
             border: Border.all(color: AppColors.separator, width: 0.5),
             boxShadow: [
               BoxShadow(
@@ -62,12 +61,11 @@ class _TicketCardState extends State<TicketCard> {
             ],
           ),
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: AppRadius.br10,
             child: IntrinsicHeight(
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Colored accent strip (uniform-border-safe)
                   Container(width: 3, color: accentBorder),
                   Expanded(
                     child: Padding(
@@ -80,7 +78,8 @@ class _TicketCardState extends State<TicketCard> {
                               padding: EdgeInsets.only(right: 9, top: 2),
                               child: Text('⋮⋮',
                                   style: TextStyle(
-                                      color: Color(0xFFD1D1D6), fontSize: 13)),
+                                      color: AppColors.dragHandle,
+                                      fontSize: 13)),
                             ),
                           Expanded(
                             child: Column(
@@ -91,11 +90,7 @@ class _TicketCardState extends State<TicketCard> {
                                 Text(t.summary,
                                     maxLines: 2,
                                     overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w500,
-                                        height: 1.35,
-                                        color: AppColors.text)),
+                                    style: AppTypography.cardSummary),
                                 const SizedBox(height: 6),
                                 _metaRow(t),
                                 if (widget.attentionMeta != null) ...[
@@ -121,11 +116,11 @@ class _TicketCardState extends State<TicketCard> {
   Widget _topRow(Ticket t) {
     return Row(
       children: [
-        _KeyChip(label: t.key, onTap: widget.onOpenInBrowser),
+        KeyChip(label: t.key, onTap: widget.onOpenInBrowser),
         const SizedBox(width: 4),
         InkWell(
           onTap: widget.onOpenInBrowser,
-          borderRadius: BorderRadius.circular(4),
+          borderRadius: AppRadius.br4,
           child: const Padding(
             padding: EdgeInsets.all(2),
             child: Icon(Icons.open_in_new, size: 13, color: AppColors.accent),
@@ -148,9 +143,10 @@ class _TicketCardState extends State<TicketCard> {
             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
             decoration: BoxDecoration(
               color: AppColors.aging.withValues(alpha: 0.14),
-              borderRadius: BorderRadius.circular(4),
+              borderRadius: AppRadius.br4,
             ),
-            child: Text('⏳ ${t.ageLabel} in ${t.status}',
+            child: Text(
+                AppLocalizations.of(context).cardAgePill(t.ageLabel, t.status),
                 style: const TextStyle(
                     fontSize: 9,
                     fontWeight: FontWeight.w700,
@@ -164,11 +160,14 @@ class _TicketCardState extends State<TicketCard> {
   }
 
   Widget _metaRow(Ticket t) {
+    final l10n = AppLocalizations.of(context);
     return Row(
       children: [
         Flexible(
           child: Text(
-            '📁 ${t.projectName}${t.issueType.isNotEmpty ? ' · ${t.issueType}' : ''}',
+            t.issueType.isNotEmpty
+                ? l10n.cardProjectWithType(t.projectName, t.issueType)
+                : l10n.cardProjectOnly(t.projectName),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: const TextStyle(fontSize: 10, color: AppColors.text2),
@@ -191,20 +190,20 @@ class _TicketCardState extends State<TicketCard> {
     );
   }
 
-  /// "👤 from Sarah · sent 2d ago      [✓ Done]"
   Widget _attentionRow(AttentionMeta meta) {
-    final c = AppColors.status['Needs Attention']!;
+    final l10n = AppLocalizations.of(context);
+    const c = AppColors.statusNeedsAttention;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
       decoration: BoxDecoration(
         color: c.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(7),
+        borderRadius: AppRadius.br7,
       ),
       child: Row(
         children: [
           Expanded(
             child: Text(
-              '👤 from ${meta.requestedBy} · sent ${meta.agoLabel}',
+              l10n.cardAttentionFrom(meta.requestedBy, meta.agoLabel),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
@@ -214,64 +213,22 @@ class _TicketCardState extends State<TicketCard> {
           if (widget.onMarkDone != null)
             InkWell(
               onTap: widget.onMarkDone,
-              borderRadius: BorderRadius.circular(6),
+              borderRadius: AppRadius.br6,
               child: Container(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: AppColors.priority['Low'],
-                  borderRadius: BorderRadius.circular(6),
+                decoration: const BoxDecoration(
+                  color: AppColors.success,
+                  borderRadius: AppRadius.br6,
                 ),
-                child: const Text('✓ Done',
-                    style: TextStyle(
+                child: Text(l10n.cardMarkDone,
+                    style: const TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
                         color: Colors.white)),
               ),
             ),
         ],
-      ),
-    );
-  }
-}
-
-class _KeyChip extends StatefulWidget {
-  final String label;
-  final VoidCallback onTap;
-  const _KeyChip({required this.label, required this.onTap});
-
-  @override
-  State<_KeyChip> createState() => _KeyChipState();
-}
-
-class _KeyChipState extends State<_KeyChip> {
-  bool _h = false;
-  @override
-  Widget build(BuildContext context) {
-    return MouseRegion(
-      cursor: SystemMouseCursors.click,
-      onEnter: (_) => setState(() => _h = true),
-      onExit: (_) => setState(() => _h = false),
-      child: GestureDetector(
-        onTap: widget.onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
-          decoration: BoxDecoration(
-            color: AppColors.accentSoft,
-            borderRadius: BorderRadius.circular(4),
-          ),
-          child: Text(
-            widget.label,
-            style: TextStyle(
-              fontFamily: 'monospace',
-              fontSize: 10,
-              fontWeight: FontWeight.w600,
-              color: AppColors.accent,
-              decoration: _h ? TextDecoration.underline : TextDecoration.none,
-              decorationColor: AppColors.accent,
-            ),
-          ),
-        ),
       ),
     );
   }

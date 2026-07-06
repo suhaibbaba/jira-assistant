@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:triage/l10n/gen/app_localizations.dart';
 import 'package:triage/models/ticket.dart';
 import 'package:triage/theme/app_theme.dart';
+import 'package:triage/widgets/ui/ui.dart';
 
-/// The detail popover shown when a card is tapped.
 class TicketDetailDialog extends StatelessWidget {
   final Ticket ticket;
   final VoidCallback onOpenInBrowser;
@@ -18,16 +19,16 @@ class TicketDetailDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = ticket;
+    final l10n = AppLocalizations.of(context);
     return Dialog(
-      backgroundColor: Colors.white,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      backgroundColor: AppColors.surface,
+      shape: const RoundedRectangleBorder(borderRadius: AppRadius.br14),
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 440),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header
             Padding(
               padding: const EdgeInsets.fromLTRB(18, 16, 18, 12),
               child: Column(
@@ -35,30 +36,11 @@ class TicketDetailDialog extends StatelessWidget {
                 children: [
                   Row(
                     children: [
-                      InkWell(
-                        onTap: onOpenInBrowser,
-                        child: Container(
-                          padding:
-                              const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(
-                              color: AppColors.accentSoft,
-                              borderRadius: BorderRadius.circular(4)),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(t.key,
-                                  style: const TextStyle(
-                                      fontFamily: 'monospace',
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w600,
-                                      color: AppColors.accent)),
-                              const SizedBox(width: 4),
-                              const Icon(Icons.open_in_new,
-                                  size: 12, color: AppColors.accent),
-                            ],
-                          ),
-                        ),
-                      ),
+                      KeyChip(
+                          label: t.key,
+                          onTap: onOpenInBrowser,
+                          large: true,
+                          showOpenIcon: true),
                       const SizedBox(width: 8),
                       Container(
                         width: 9,
@@ -87,23 +69,19 @@ class TicketDetailDialog extends StatelessWidget {
               ),
             ),
             const Divider(height: 0.5, color: AppColors.separator),
-            // Body
             Padding(
               padding: const EdgeInsets.fromLTRB(18, 14, 18, 16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   if (t.description.isNotEmpty) ...[
-                    _label('Description'),
+                    _label(l10n.detailDescription),
                     const SizedBox(height: 3),
                     ConstrainedBox(
                       constraints: const BoxConstraints(maxHeight: 160),
                       child: SingleChildScrollView(
                         child: Text(t.description,
-                            style: const TextStyle(
-                                fontSize: 12,
-                                height: 1.45,
-                                color: Color(0xFF3A3A3C))),
+                            style: AppTypography.bodyLong),
                       ),
                     ),
                     const SizedBox(height: 14),
@@ -111,25 +89,32 @@ class TicketDetailDialog extends StatelessWidget {
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _field('Assignee', t.assigneeName ?? 'Unassigned'),
+                      _field(l10n.detailAssignee,
+                          t.assigneeName ?? l10n.detailUnassigned),
                       const SizedBox(width: 24),
-                      _field('Project', '📁 ${t.projectName}'),
+                      _field(l10n.detailProject,
+                          l10n.detailProjectValue(t.projectName)),
                       const SizedBox(width: 24),
-                      _field('In status', t.ageLabel.isEmpty ? '—' : t.ageLabel),
+                      _field(l10n.detailInStatus,
+                          t.ageLabel.isEmpty ? l10n.commonEmDash : t.ageLabel),
                     ],
                   ),
                   const SizedBox(height: 12),
-                  _field('Type',
-                      t.issueType.isEmpty ? '—' : '🐞 ${t.issueType}'),
+                  _field(
+                      l10n.detailType,
+                      t.issueType.isEmpty
+                          ? l10n.commonEmDash
+                          : l10n.detailTypeValue(t.issueType)),
                   const SizedBox(height: 16),
                   Row(
                     children: [
                       Expanded(
-                        child: _primaryBtn('Open in Jira  ↗', onOpenInBrowser),
+                        child:
+                            _primaryBtn(l10n.detailOpenInJira, onOpenInBrowser),
                       ),
                       if (t.isEstimateRequest && onDismissEstimate != null) ...[
                         const SizedBox(width: 10),
-                        _secondaryBtn('Done', () {
+                        _secondaryBtn(l10n.commonDone, () {
                           onDismissEstimate!();
                           Navigator.of(context).pop();
                         }),
@@ -150,7 +135,7 @@ class TicketDetailDialog extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
       decoration: BoxDecoration(
-          color: c.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(7)),
+          color: c.withValues(alpha: 0.12), borderRadius: AppRadius.br7),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -167,12 +152,8 @@ class TicketDetailDialog extends StatelessWidget {
     );
   }
 
-  Widget _label(String s) => Text(s.toUpperCase(),
-      style: const TextStyle(
-          fontSize: 10,
-          fontWeight: FontWeight.w600,
-          letterSpacing: 0.3,
-          color: AppColors.text3));
+  Widget _label(String s) =>
+      Text(s.toUpperCase(), style: AppTypography.detailLabel);
 
   Widget _field(String k, String v) => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -181,7 +162,7 @@ class TicketDetailDialog extends StatelessWidget {
           const SizedBox(height: 3),
           Text(v,
               style: const TextStyle(
-                  fontSize: 12, color: Color(0xFF3A3A3C), height: 1.3)),
+                  fontSize: 12, color: AppColors.textBody, height: 1.3)),
         ],
       );
 
@@ -190,8 +171,8 @@ class TicketDetailDialog extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 10),
           alignment: Alignment.center,
-          decoration: BoxDecoration(
-              color: AppColors.accent, borderRadius: BorderRadius.circular(8)),
+          decoration: const BoxDecoration(
+              color: AppColors.accent, borderRadius: AppRadius.br8),
           child: Text(label,
               style: const TextStyle(
                   color: Colors.white,
@@ -205,14 +186,10 @@ class TicketDetailDialog extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 18),
           alignment: Alignment.center,
-          decoration: BoxDecoration(
-              color: const Color(0xFFF0F0F2),
-              borderRadius: BorderRadius.circular(8)),
-          child: Text(label,
-              style: const TextStyle(
-                  color: AppColors.text,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600)),
+          decoration: const BoxDecoration(
+              color: AppColors.secondaryButtonBg,
+              borderRadius: AppRadius.br8),
+          child: Text(label, style: AppTypography.buttonLabelSecondary),
         ),
       );
 }

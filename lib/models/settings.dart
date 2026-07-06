@@ -1,10 +1,9 @@
 import 'dart:convert';
 
-/// Jira connection credentials (the token is stored separately in secure storage).
 class JiraCredentials {
-  final String domain; // acme.atlassian.net
+  final String domain;
   final String email;
-  final String token; // not persisted in plain prefs — secure storage only
+  final String token;
 
   const JiraCredentials({required this.domain, required this.email, required this.token});
 
@@ -14,7 +13,6 @@ class JiraCredentials {
   String browseUrl(String key) => 'https://$cleanDomain/browse/$key';
 }
 
-/// Per-status aging-alert configuration.
 class StatusAgingRule {
   final String status;
   bool alertEnabled;
@@ -48,24 +46,22 @@ class TeamMember {
       TeamMember(name: j['name'] ?? '', email: j['email'] ?? '', visible: j['visible'] ?? true);
 }
 
-/// All persisted settings (everything except the secret token).
 class AppSettings {
   String domain;
   String email;
-  String jql; // optional custom scope
+  String jql;
 
-  int syncIntervalMinutes; // 5 / 15 / 30
+  int syncIntervalMinutes;
   bool agingUsesBusinessDays;
-  String morningDigestTime; // "08:30"
+  String morningDigestTime;
   bool morningDigestEnabled;
 
-  int estimateReminderHours; // remind if an estimate request sits untouched
+  int estimateReminderHours;
 
   List<StatusAgingRule> agingRules;
   List<TeamMember> team;
   Set<String> hiddenProjectKeys;
-  Set<String> visibleStatuses; // which status checkboxes are ticked
-  Set<String> notifyPriorities; // which priorities trigger "new ticket" alerts
+  Set<String> visibleStatuses;
 
   AppSettings({
     this.domain = '',
@@ -80,13 +76,11 @@ class AppSettings {
     List<TeamMember>? team,
     Set<String>? hiddenProjectKeys,
     Set<String>? visibleStatuses,
-    Set<String>? notifyPriorities,
   })  : agingRules = agingRules ?? _defaultAgingRules(),
         team = team ?? [],
         hiddenProjectKeys = hiddenProjectKeys ?? {},
         visibleStatuses = visibleStatuses ??
-            {'New', 'Blocked', 'Need Clarification', 'In Progress', 'Review'},
-        notifyPriorities = notifyPriorities ?? {'Highest', 'High'};
+            {'New', 'Blocked', 'Need Clarification', 'In Progress', 'Review'};
 
   static List<StatusAgingRule> _defaultAgingRules() => [
         StatusAgingRule(status: 'New', alertEnabled: true, thresholdDays: 1),
@@ -109,7 +103,6 @@ class AppSettings {
         'team': team.map((m) => m.toJson()).toList(),
         'hidden': hiddenProjectKeys.toList(),
         'statuses': visibleStatuses.toList(),
-        'notifyP': notifyPriorities.toList(),
       });
 
   factory AppSettings.fromRawJson(String raw) {
@@ -132,8 +125,6 @@ class AppSettings {
       visibleStatuses: ((j['statuses'] as List?)?.cast<String>() ??
               ['New', 'Blocked', 'Need Clarification', 'In Progress', 'Review'])
           .toSet(),
-      notifyPriorities:
-          ((j['notifyP'] as List?)?.cast<String>() ?? ['Highest', 'High']).toSet(),
     );
   }
 }

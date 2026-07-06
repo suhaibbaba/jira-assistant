@@ -4,7 +4,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:triage/models/settings.dart';
 import 'package:triage/models/ticket.dart';
 
-/// Wraps secure storage (token) + shared preferences (settings, order, cache).
 class StorageService {
   static const _kToken = 'jira_token';
   static const _kSettings = 'app_settings';
@@ -16,12 +15,10 @@ class StorageService {
     aOptions: AndroidOptions(encryptedSharedPreferences: true),
   );
 
-  // ── Token (secure) ──
   Future<void> saveToken(String token) => _secure.write(key: _kToken, value: token);
   Future<String?> readToken() => _secure.read(key: _kToken);
   Future<void> clearToken() => _secure.delete(key: _kToken);
 
-  // ── Settings ──
   Future<void> saveSettings(AppSettings s) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_kSettings, s.toRawJson());
@@ -38,7 +35,6 @@ class StorageService {
     }
   }
 
-  // ── Manual order: ticketKey -> rank ──
   Future<void> saveManualOrder(Map<String, int> order) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_kManualOrder, jsonEncode(order));
@@ -52,7 +48,6 @@ class StorageService {
     return m.map((k, v) => MapEntry(k, v as int));
   }
 
-  // ── Ticket cache (so we can show last-known data when offline) ──
   Future<void> saveCache(List<Ticket> tickets) async {
     final prefs = await SharedPreferences.getInstance();
     final list = tickets
@@ -101,7 +96,6 @@ class StorageService {
     }).toList();
   }
 
-  // ── Seen keys (for "new since last sync" + badge) ──
   Future<Set<String>> loadSeenKeys() async {
     final prefs = await SharedPreferences.getInstance();
     return (prefs.getStringList(_kSeenKeys) ?? []).toSet();

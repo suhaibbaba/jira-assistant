@@ -42,7 +42,6 @@ class TimeLog {
 
   bool get isNoteOnly => ticketKey.isEmpty;
 
-  /// What to show as the entry's title: the key, or the note.
   String get displayLabel => isNoteOnly ? (note.isEmpty ? 'Note' : note) : ticketKey;
 
   Map<String, dynamic> toJson() => {
@@ -63,7 +62,6 @@ class TimeLog {
       );
 }
 
-/// Stores time logs locally and auto-deletes anything older than 30 days.
 class TimeTracker {
   static const _key = 'time_logs';
   List<TimeLog> _logs = [];
@@ -102,7 +100,7 @@ class TimeTracker {
           .map((e) => TimeLog.fromJson(e as Map<String, dynamic>))
           .toList();
     }
-    _autoCleanup(); // silently drop logs older than 30 days
+    _autoCleanup();
     await save();
   }
 
@@ -116,7 +114,6 @@ class TimeTracker {
     await prefs.setString(_key, jsonEncode(_logs.map((l) => l.toJson()).toList()));
   }
 
-  /// Plain-text end-of-day summary for export / sharing.
   String endOfDaySummary([DateTime? day]) {
     final d = day ?? DateTime.now();
     final logs = forDay(d);
@@ -128,7 +125,6 @@ class TimeTracker {
       return buf.toString();
     }
 
-    // Group by ticket key, or by the note text for note-only entries.
     final byTicket = <String, List<TimeLog>>{};
     for (final l in logs) {
       byTicket.putIfAbsent(l.displayLabel, () => []).add(l);

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:triage/config/app_info.dart';
+import 'package:triage/l10n/gen/app_localizations.dart';
 import 'package:triage/state/app_state.dart';
 import 'package:triage/theme/app_theme.dart';
 import 'package:triage/widgets/ui/ui.dart';
@@ -28,27 +30,28 @@ class _ConnectScreenState extends State<ConnectScreen> {
     _jql.text = s.jql;
   }
 
-  String? _validate() {
+  String? _validate(AppLocalizations l10n) {
     final domain = _domain.text.trim();
     final email = _email.text.trim();
     final token = _token.text.trim();
-    if (domain.isEmpty) return 'Enter your Jira domain.';
+    if (domain.isEmpty) return l10n.connectErrDomainEmpty;
     if (domain.contains(' ') || !domain.contains('.')) {
-      return 'Domain looks invalid — e.g. yourcompany.atlassian.net';
+      return l10n.connectErrDomainInvalid;
     }
-    if (email.isEmpty) return 'Enter your email.';
+    if (email.isEmpty) return l10n.connectErrEmailEmpty;
     if (!RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(email)) {
-      return 'Email format looks invalid.';
+      return l10n.connectErrEmailInvalid;
     }
-    if (token.isEmpty) return 'Paste your API token.';
+    if (token.isEmpty) return l10n.connectErrTokenEmpty;
     if (token.length < 20) {
-      return 'That token looks too short — paste the full API token.';
+      return l10n.connectErrTokenShort;
     }
     return null;
   }
 
   Future<void> _connect() async {
-    final validationError = _validate();
+    final l10n = AppLocalizations.of(context);
+    final validationError = _validate(l10n);
     if (validationError != null) {
       setState(() => _error = validationError);
       return;
@@ -63,21 +66,25 @@ class _ConnectScreenState extends State<ConnectScreen> {
     if (!mounted) return;
     setState(() => _busy = false);
     if (app.conn == ConnState.authError) {
-      setState(() => _error = 'Could not authenticate. Check email and API token.');
+      setState(() => _error = l10n.connectErrAuth);
     } else if (app.conn == ConnState.offline) {
-      setState(() => _error = app.statusMessage ?? 'Could not reach Jira.');
+      setState(() => _error = app.statusMessage ?? l10n.connectErrNetwork);
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [Color(0xFF0F172A), Color(0xFF1E3A5F)]),
+              colors: [
+                AppColors.connectGradientTop,
+                AppColors.connectGradientBottom
+              ]),
         ),
         child: Center(
           child: SingleChildScrollView(
@@ -85,9 +92,9 @@ class _ConnectScreenState extends State<ConnectScreen> {
               width: 420,
               margin: const EdgeInsets.all(24),
               padding: const EdgeInsets.fromLTRB(32, 32, 32, 28),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
+              decoration: const BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: AppRadius.br16,
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -95,53 +102,50 @@ class _ConnectScreenState extends State<ConnectScreen> {
                 children: [
                   const Text('🎯', style: TextStyle(fontSize: 34), textAlign: TextAlign.center),
                   const SizedBox(height: 8),
-                  const Text('Xngage — Jira Assistance',
+                  const Text(AppInfo.appNameFull,
                       textAlign: TextAlign.center,
-                      style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.text)),
+                      style: AppTypography.heading),
                   const SizedBox(height: 4),
-                  const Text('Read-only · your Jira stays untouched',
+                  Text(l10n.connectSubtitle,
                       textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 13, color: AppColors.text2)),
+                      style: const TextStyle(fontSize: 13, color: AppColors.text2)),
                   const SizedBox(height: 24),
                   if (_error != null) ...[
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                       decoration: BoxDecoration(
-                          color: const Color(0xFFFEF2F2),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: const Color(0xFFFECACA))),
-                      child: Text('⚠️ $_error',
+                          color: AppColors.errorSurface,
+                          borderRadius: AppRadius.br8,
+                          border: Border.all(color: AppColors.errorBorder)),
+                      child: Text(l10n.connectErrorBanner(_error!),
                           style: const TextStyle(
-                              fontSize: 13, color: Color(0xFFDC2626))),
+                              fontSize: 13, color: AppColors.errorText)),
                     ),
                     const SizedBox(height: 16),
                   ],
                   AppTextField(
-                      label: 'Jira Domain',
+                      label: l10n.connectDomainLabel,
                       controller: _domain,
-                      hint: 'yourcompany.atlassian.net',
+                      hint: l10n.connectDomainHint,
                       labelAbove: true),
                   const SizedBox(height: 14),
                   AppTextField(
-                      label: 'Email',
+                      label: l10n.connectEmailLabel,
                       controller: _email,
-                      hint: 'you@company.com',
+                      hint: l10n.connectEmailHint,
                       labelAbove: true),
                   const SizedBox(height: 14),
                   AppTextField(
-                      label: 'API Token',
+                      label: l10n.connectTokenLabel,
                       controller: _token,
-                      hint: 'Paste your API token',
+                      hint: l10n.connectTokenHint,
                       obscure: true,
                       labelAbove: true),
                   const SizedBox(height: 14),
                   AppTextField(
-                      label: 'JQL filter (optional)',
+                      label: l10n.connectJqlLabel,
                       controller: _jql,
-                      hint: 'project = "ABC" AND sprint in openSprints()',
+                      hint: l10n.connectJqlHint,
                       labelAbove: true),
                   const SizedBox(height: 14),
                   const SizedBox(height: 8),
@@ -153,14 +157,14 @@ class _ConnectScreenState extends State<ConnectScreen> {
                                   width: 22,
                                   height: 22,
                                   child: CircularProgressIndicator(strokeWidth: 2.5))))
-                      : AppButton(label: 'Load Tickets  →', onTap: _connect),
+                      : AppButton(label: l10n.connectLoadTickets, onTap: _connect),
                   const SizedBox(height: 16),
                   GestureDetector(
                     onTap: () => launchUrl(Uri.parse(
                         'https://id.atlassian.com/manage-profile/security/api-tokens')),
-                    child: const Text('🔒 Get an API token ↗',
+                    child: Text(l10n.connectGetToken,
                         textAlign: TextAlign.center,
-                        style: TextStyle(fontSize: 11, color: AppColors.accent)),
+                        style: const TextStyle(fontSize: 11, color: AppColors.accent)),
                   ),
                 ],
               ),

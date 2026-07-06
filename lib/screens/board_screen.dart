@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:triage/config/app_info.dart';
+import 'package:triage/l10n/gen/app_localizations.dart';
 import 'package:triage/state/app_state.dart';
 import 'package:triage/models/ticket.dart';
 import 'package:triage/models/attention_item.dart';
@@ -22,6 +24,7 @@ class BoardScreen extends StatelessWidget {
       body: Column(
         children: [
           const _Toolbar(),
+          const _UpdateBar(),
           const _ConnectionBar(),
           Expanded(
             child: Row(
@@ -43,6 +46,7 @@ class _Toolbar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final app = context.watch<AppState>();
+    final l10n = AppLocalizations.of(context);
     return Container(
       height: 52,
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -53,15 +57,14 @@ class _Toolbar extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const Text('Xngage — Jira Assistance',
-              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+          const Text(AppInfo.appNameFull, style: AppTypography.toolbarTitle),
           const SizedBox(width: 6),
-          Text('· ${app.settings.domain}',
-              style: const TextStyle(fontSize: 12, color: AppColors.text2)),
+          Text(l10n.boardToolbarDomain(app.settings.domain),
+              style: AppTypography.bodySecondary),
           const Spacer(),
           AppIconButton(
               icon: Icons.timer_outlined,
-              tooltip: 'Time tracking',
+              tooltip: l10n.boardTooltipTimeTracking,
               onTap: () {
                 Navigator.of(context).push(
                     MaterialPageRoute(builder: (_) => const TimeScreen()));
@@ -69,7 +72,7 @@ class _Toolbar extends StatelessWidget {
           const SizedBox(width: 10),
           AppIconButton(
               icon: Icons.wb_sunny_outlined,
-              tooltip: 'Morning digest',
+              tooltip: l10n.boardTooltipMorningDigest,
               onTap: () {
                 Navigator.of(context).push(
                     MaterialPageRoute(builder: (_) => const DigestScreen()));
@@ -77,12 +80,12 @@ class _Toolbar extends StatelessWidget {
           const SizedBox(width: 10),
           AppIconButton(
               icon: Icons.add,
-              tooltip: 'Add ticket that needs attention',
+              tooltip: l10n.boardTooltipAddAttention,
               onTap: () => _showAddDialog(context)),
           const SizedBox(width: 10),
           AppIconButton(
               icon: Icons.settings_outlined,
-              tooltip: 'Settings',
+              tooltip: l10n.boardTooltipSettings,
               onTap: () {
                 Navigator.of(context).push(
                     MaterialPageRoute(builder: (_) => const SettingsScreen()));
@@ -95,38 +98,37 @@ class _Toolbar extends StatelessWidget {
   }
 
   void _showAddDialog(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final keyController = TextEditingController();
     final byController = TextEditingController();
     showAppDialog(
       context: context,
-      title: 'Needs attention',
+      title: l10n.boardAddDialogTitle,
       content: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const DialogHint(
-              'Add a ticket someone sent you (e.g. for an estimate). '
-              'The time is recorded automatically.'),
+          DialogHint(l10n.boardAddDialogHint),
           const SizedBox(height: 12),
           AppTextField(
             controller: keyController,
-            label: 'Ticket key',
-            hint: 'PAY-123',
+            label: l10n.boardAddTicketKeyLabel,
+            hint: l10n.boardAddTicketKeyHint,
             autofocus: true,
             textCapitalization: TextCapitalization.characters,
           ),
           const SizedBox(height: 10),
           AppTextField(
             controller: byController,
-            label: 'Sent by',
-            hint: 'e.g. Product Owner, Sarah…',
+            label: l10n.boardAddSentByLabel,
+            hint: l10n.boardAddSentByHint,
           ),
         ],
       ),
       actions: [
         TextButton(
             onPressed: () => Navigator.of(context, rootNavigator: true).pop(),
-            child: const Text('Cancel')),
+            child: Text(l10n.commonCancel)),
         FilledButton(
           onPressed: () async {
             final key = keyController.text.trim();
@@ -135,13 +137,13 @@ class _Toolbar extends StatelessWidget {
             if (key.isEmpty) return;
             final ok = await context
                 .read<AppState>()
-                .addAttention(key, by.isEmpty ? 'Unknown' : by);
+                .addAttention(key, by.isEmpty ? l10n.boardAddUnknownSender : by);
             if (context.mounted && !ok) {
               ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Could not find ticket "$key".')));
+                  SnackBar(content: Text(l10n.boardTicketNotFound(key))));
             }
           },
-          child: const Text('Add'),
+          child: Text(l10n.commonAdd),
         ),
       ],
     );
@@ -154,13 +156,14 @@ class _SyncButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     String when() {
       final t = app.lastSyncedAt;
-      if (t == null) return 'never';
+      if (t == null) return l10n.boardSyncedNever;
       final d = DateTime.now().difference(t);
-      if (d.inMinutes < 1) return 'just now';
-      if (d.inMinutes < 60) return '${d.inMinutes}m ago';
-      return '${d.inHours}h ago';
+      if (d.inMinutes < 1) return l10n.boardSyncedJustNow;
+      if (d.inMinutes < 60) return l10n.boardSyncedMinutesAgo(d.inMinutes);
+      return l10n.boardSyncedHoursAgo(d.inHours);
     }
 
     return Column(
@@ -168,13 +171,12 @@ class _SyncButton extends StatelessWidget {
       children: [
         InkWell(
           onTap: app.isSyncing ? null : () => app.sync(),
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: AppRadius.br8,
           child: Container(
             width: 32,
             height: 32,
-            decoration: BoxDecoration(
-                color: AppColors.accent,
-                borderRadius: BorderRadius.circular(8)),
+            decoration: const BoxDecoration(
+                color: AppColors.accent, borderRadius: AppRadius.br8),
             child: app.isSyncing
                 ? const Padding(
                     padding: EdgeInsets.all(8),
@@ -184,9 +186,58 @@ class _SyncButton extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 1),
-        Text('Synced ${when()}',
+        Text(l10n.boardSyncedLabel(when()),
             style: const TextStyle(fontSize: 9, color: AppColors.text3)),
       ],
+    );
+  }
+}
+
+class _UpdateBar extends StatelessWidget {
+  const _UpdateBar();
+
+  @override
+  Widget build(BuildContext context) {
+    final app = context.watch<AppState>();
+    final l10n = AppLocalizations.of(context);
+    final update = app.availableUpdate;
+    if (update == null) return const SizedBox.shrink();
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      decoration: const BoxDecoration(
+        color: AppColors.accentSoft,
+        border:
+            Border(bottom: BorderSide(color: AppColors.separator, width: 0.5)),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: MouseRegion(
+              cursor: SystemMouseCursors.click,
+              child: GestureDetector(
+                onTap: () => app.openUpdatePage(),
+                child: Text(l10n.updateBanner(update.version),
+                    style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.accent)),
+              ),
+            ),
+          ),
+          Tooltip(
+            message: l10n.updateDismissTooltip,
+            child: InkWell(
+              onTap: () => app.dismissUpdate(),
+              borderRadius: BorderRadius.circular(4),
+              child: const Padding(
+                padding: EdgeInsets.all(2),
+                child: Icon(Icons.close, size: 14, color: AppColors.text2),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -197,6 +248,7 @@ class _ConnectionBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final app = context.watch<AppState>();
+    final l10n = AppLocalizations.of(context);
     if (app.conn == ConnState.ok || app.conn == ConnState.unconfigured) {
       return const SizedBox.shrink();
     }
@@ -204,28 +256,28 @@ class _ConnectionBar extends StatelessWidget {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 7),
-      color: isAuth ? const Color(0xFFFDE7E9) : const Color(0xFFFFF4E5),
+      color: isAuth ? AppColors.authBannerBg : AppColors.offlineBannerBg,
       child: Row(
         children: [
           Text(isAuth ? '🔒 ' : '⚠️ '),
           Expanded(
             child: Text(
               isAuth
-                  ? 'Your Jira token expired — reconnect to continue.'
-                  : (app.statusMessage ??
-                      'Offline — showing last synced data.'),
+                  ? l10n.boardConnAuthExpired
+                  : (app.statusMessage ?? l10n.boardConnOffline),
               style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w500,
                   color: isAuth
-                      ? const Color(0xFFC0263A)
-                      : const Color(0xFFB25E00)),
+                      ? AppColors.authBannerText
+                      : AppColors.offlineBannerText),
             ),
           ),
           if (isAuth)
             TextButton(
               onPressed: () => app.signOut(),
-              child: const Text('Reconnect', style: TextStyle(fontSize: 12)),
+              child: Text(l10n.boardConnReconnect,
+                  style: const TextStyle(fontSize: 12)),
             ),
         ],
       ),
@@ -239,9 +291,9 @@ class _Board extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final app = context.watch<AppState>();
+    final l10n = AppLocalizations.of(context);
     final grouped = app.groupedByStatus;
 
-    // Section order: Needs Attention pinned first, then New, then the rest.
     final order = [
       'New',
       'Blocked',
@@ -259,7 +311,7 @@ class _Board extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(22, 18, 22, 24),
       children: [
         if (app.newTicketCount > 0 && !app.newBannerDismissed)
-          _newBanner(app, app.newTicketCount),
+          _newBanner(app, l10n, app.newTicketCount),
         if (grouped['Needs Attention'] != null)
           _StatusSection(
             status: 'Needs Attention',
@@ -268,27 +320,28 @@ class _Board extends StatelessWidget {
           ),
         ...sections.map((s) => _StatusSection(status: s, tickets: grouped[s]!)),
         if (sections.isEmpty && grouped['Needs Attention'] == null)
-          const Padding(
-            padding: EdgeInsets.only(top: 60),
+          Padding(
+            padding: const EdgeInsets.only(top: 60),
             child: Center(
-              child: Text('No tickets match your current filters.',
-                  style: TextStyle(color: AppColors.text3, fontSize: 14)),
+              child: Text(l10n.boardNoTicketsMatch,
+                  style: const TextStyle(color: AppColors.text3, fontSize: 14)),
             ),
           ),
       ],
     );
   }
 
-  Widget _newBanner(AppState app, int count) => Container(
+  Widget _newBanner(AppState app, AppLocalizations l10n, int count) =>
+      Container(
         margin: const EdgeInsets.only(bottom: 18),
         padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
         decoration: BoxDecoration(
           gradient: const LinearGradient(
-              colors: [Color(0xFFFF3B30), Color(0xFFFF6259)]),
-          borderRadius: BorderRadius.circular(12),
+              colors: [AppColors.danger, AppColors.dangerGradientEnd]),
+          borderRadius: AppRadius.br12,
           boxShadow: [
             BoxShadow(
-                color: const Color(0xFFFF3B30).withValues(alpha: 0.25),
+                color: AppColors.danger.withValues(alpha: 0.25),
                 blurRadius: 14,
                 offset: const Offset(0, 4)),
           ],
@@ -300,15 +353,11 @@ class _Board extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('$count new tickets need attention',
-                      style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700)),
+                  Text(l10n.boardNewTicketsBanner(count),
+                      style: AppTypography.bannerTitle),
                 ],
               ),
             ),
-            // ── Close button ──
             MouseRegion(
               cursor: SystemMouseCursors.click,
               child: GestureDetector(
@@ -328,7 +377,6 @@ class _Board extends StatelessWidget {
       );
 }
 
-/// One status section, with drag-to-reorder for the tickets inside.
 class _StatusSection extends StatelessWidget {
   final String status;
   final List<Ticket> tickets;
@@ -343,6 +391,7 @@ class _StatusSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final app = context.read<AppState>();
+    final l10n = AppLocalizations.of(context);
     final color = AppColors.statusColor(status);
 
     return Padding(
@@ -351,10 +400,11 @@ class _StatusSection extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SectionHeader(
-            title: status,
+            title:
+                status == 'Needs Attention' ? l10n.statusNeedsAttention : status,
             count: tickets.length,
             color: color,
-            trailing: draggable ? '⇅ drag to reorder' : null,
+            trailing: draggable ? l10n.boardDragToReorder : null,
           ),
           const SizedBox(height: 10),
           if (draggable)

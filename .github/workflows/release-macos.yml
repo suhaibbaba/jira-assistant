@@ -1,0 +1,59 @@
+# Builds the macOS app and attaches it to a GitHub Release whenever a
+# version tag (v1.7.0, v2.0.0, ...) is pushed:
+#
+#   git tag v1.7.0 && git push origin v1.7.0
+#
+# The in-app update banner (lib/services/update_service.dart) compares the
+# latest release tag against AppInfo.appVersion — keep pubspec.yaml,
+# lib/config/app_info.dart, and the tag in sync when releasing.
+#
+# NOTE: the app is signed with a free Personal Team certificate, so the CI
+# build is unsigned; users may need to right-click → Open on first launch.
+
+name: Release macOS
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write # create the release and upload the asset
+
+jobs:
+  build-and-release:
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Flutter pub get
+        run: flutter pub get
+
+      - name: Analyze
+        run: flutter analyze
+
+      - name: Run tests
+        run: flutter test
+
+      - name: Build macOS (release)
+        run: flutter build macos --release
+
+      - name: Zip the .app
+        # ditto preserves the bundle structure + resource forks (unlike zip -r)
+        run: |
+          APP_PATH=$(ls -d build/macos/Build/Products/Release/*.app | head -1)
+          ditto -c -k --keepParent "$APP_PATH" "Xngage-${GITHUB_REF_NAME}-macos.zip"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: Xngage-*.zip
+          generate_release_notes: true

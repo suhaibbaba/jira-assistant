@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 
+import 'package:triage/l10n/gen/app_localizations.dart';
 import 'package:triage/state/app_state.dart';
 import 'package:triage/models/time_log.dart';
 import 'package:triage/theme/app_theme.dart';
@@ -15,10 +16,9 @@ class TimeScreen extends StatefulWidget {
 }
 
 class _TimeScreenState extends State<TimeScreen> {
-  /// Sentinel dropdown value for "no ticket — note only".
   static const _noteOption = '__note__';
 
-  String? _ticketKey = _noteOption; // note option is first AND the default
+  String? _ticketKey = _noteOption;
   final _hours = TextEditingController();
   final _note = TextEditingController();
   WorkType _type = WorkType.development;
@@ -32,9 +32,19 @@ class _TimeScreenState extends State<TimeScreen> {
     super.dispose();
   }
 
+  String _workTypeLabel(AppLocalizations l10n, WorkType w) => switch (w) {
+        WorkType.meeting => l10n.workTypeMeeting,
+        WorkType.development => l10n.workTypeDevelopment,
+        WorkType.codeReview => l10n.workTypeCodeReview,
+        WorkType.bugFix => l10n.workTypeBugFix,
+        WorkType.documentation => l10n.workTypeDocumentation,
+        WorkType.other => l10n.workTypeOther,
+      };
+
   @override
   Widget build(BuildContext context) {
     final app = context.watch<AppState>();
+    final l10n = AppLocalizations.of(context);
     final today = app.tracker.today;
     final total = app.tracker.totalHours(today);
     final ticketKeys = app.allTickets.map((t) => t.key).toList()..sort();
@@ -45,27 +55,27 @@ class _TimeScreenState extends State<TimeScreen> {
         backgroundColor: AppColors.bgSidebar,
         elevation: 0,
         scrolledUnderElevation: 0,
-        title: const Text('⏱️ Time Tracking',
-            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+        title: Text(l10n.timeTitle,
+            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
         shape: const Border(
             bottom: BorderSide(color: AppColors.separator, width: 0.5)),
         actions: [
           TextButton.icon(
             onPressed: () => _exportSummary(context, app),
             icon: const Icon(Icons.ios_share, size: 16),
-            label: const Text('Export', style: TextStyle(fontSize: 12)),
+            label: Text(l10n.timeExport, style: const TextStyle(fontSize: 12)),
           ),
         ],
       ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(20, 16, 20, 40),
         children: [
-          _label('Log time'),
+          _label(l10n.timeSectionLog),
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(10),
+              color: AppColors.surface,
+              borderRadius: AppRadius.br10,
               border: Border.all(color: AppColors.separator, width: 0.5),
             ),
             child: Column(
@@ -76,13 +86,12 @@ class _TimeScreenState extends State<TimeScreen> {
                     child: DropdownButtonFormField<String>(
                       value: _ticketKey,
                       isExpanded: true,
-                      decoration: appInputDecoration(label: 'Ticket'),
+                      decoration: appInputDecoration(label: l10n.timeTicketLabel),
                       items: [
-                        // First option: work without a Jira ticket.
-                        const DropdownMenuItem(
+                        DropdownMenuItem(
                             value: _noteOption,
-                            child: Text('📝 No ticket — add note',
-                                style: TextStyle(fontSize: 13))),
+                            child: Text(l10n.timeNoTicketOption,
+                                style: const TextStyle(fontSize: 13))),
                         for (final k in ticketKeys)
                           DropdownMenuItem(
                               value: k,
@@ -99,7 +108,7 @@ class _TimeScreenState extends State<TimeScreen> {
                       keyboardType:
                           const TextInputType.numberWithOptions(decimal: true),
                       style: const TextStyle(fontSize: 13),
-                      decoration: appInputDecoration(label: 'Hours'),
+                      decoration: appInputDecoration(label: l10n.timeHoursLabel),
                     ),
                   ),
                 ]),
@@ -107,36 +116,36 @@ class _TimeScreenState extends State<TimeScreen> {
                 if (_isNoteMode) ...[
                   AppTextField(
                     controller: _note,
-                    label: 'What did you work on?',
-                    hint: 'e.g. Sprint planning, interview, helping QA…',
+                    label: l10n.timeNoteLabel,
+                    hint: l10n.timeNoteHint,
                   ),
                   const SizedBox(height: 10),
                 ],
                 DropdownButtonFormField<WorkType>(
                   value: _type,
                   isExpanded: true,
-                  decoration: appInputDecoration(label: 'Work type'),
+                  decoration: appInputDecoration(label: l10n.timeWorkTypeLabel),
                   items: [
                     for (final w in WorkType.values)
                       DropdownMenuItem(
                           value: w,
-                          child: Text(w.label,
+                          child: Text(_workTypeLabel(l10n, w),
                               style: const TextStyle(fontSize: 13))),
                   ],
                   onChanged: (v) => setState(() => _type = v ?? WorkType.other),
                 ),
                 const SizedBox(height: 12),
-                AppButton(label: 'Add entry', onTap: () => _addLog(app)),
+                AppButton(label: l10n.timeAddEntry, onTap: () => _addLog(app)),
               ],
             ),
           ),
           const SizedBox(height: 20),
           Row(
             children: [
-              _label(
-                  "Today — ${DateFormat('EEE, MMM d').format(DateTime.now())}"),
+              _label(l10n.timeTodayLabel(
+                  DateFormat('EEE, MMM d').format(DateTime.now()))),
               const Spacer(),
-              Text('${_fmt(total)}h total',
+              Text(l10n.timeTotalHours(_fmt(total)),
                   style: const TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
@@ -145,27 +154,28 @@ class _TimeScreenState extends State<TimeScreen> {
           ),
           const SizedBox(height: 6),
           if (today.isEmpty)
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 30),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 30),
               child: Center(
-                child: Text('Nothing logged yet today.',
-                    style: TextStyle(color: AppColors.text3, fontSize: 13)),
+                child: Text(l10n.timeNothingLogged,
+                    style:
+                        const TextStyle(color: AppColors.text3, fontSize: 13)),
               ),
             )
           else
-            ...today.map((l) => _logRow(app, l)),
+            ...today.map((l) => _logRow(app, l10n, l)),
         ],
       ),
     );
   }
 
-  Widget _logRow(AppState app, TimeLog l) {
+  Widget _logRow(AppState app, AppLocalizations l10n, TimeLog l) {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(9),
+        color: AppColors.surface,
+        borderRadius: AppRadius.br9,
         border: Border.all(color: AppColors.separator, width: 0.5),
       ),
       child: Row(
@@ -175,10 +185,11 @@ class _TimeScreenState extends State<TimeScreen> {
             constraints: const BoxConstraints(maxWidth: 220),
             decoration: BoxDecoration(
                 color: l.isNoteOnly
-                    ? const Color(0x22FF9F0A)
+                    ? AppColors.noteChipBg
                     : AppColors.accentSoft,
-                borderRadius: BorderRadius.circular(4)),
-            child: Text(l.isNoteOnly ? '📝 ${l.displayLabel}' : l.ticketKey,
+                borderRadius: AppRadius.br4),
+            child: Text(
+                l.isNoteOnly ? l10n.timeNotePrefix(l.displayLabel) : l.ticketKey,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
@@ -186,14 +197,14 @@ class _TimeScreenState extends State<TimeScreen> {
                     fontSize: 11,
                     fontWeight: FontWeight.w600,
                     color: l.isNoteOnly
-                        ? const Color(0xFFB25E00)
+                        ? AppColors.offlineBannerText
                         : AppColors.accent)),
           ),
           const SizedBox(width: 10),
-          Text(l.type.label,
+          Text(_workTypeLabel(l10n, l.type),
               style: const TextStyle(fontSize: 12, color: AppColors.text2)),
           const Spacer(),
-          Text('${_fmt(l.hours)}h',
+          Text(l10n.timeHoursShort(_fmt(l.hours)),
               style:
                   const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
           IconButton(
@@ -206,20 +217,21 @@ class _TimeScreenState extends State<TimeScreen> {
   }
 
   void _addLog(AppState app) {
+    final l10n = AppLocalizations.of(context);
     final h = double.tryParse(_hours.text.trim());
     if (h == null || h <= 0) {
       ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('Enter valid hours.')));
+          .showSnackBar(SnackBar(content: Text(l10n.timeErrInvalidHours)));
       return;
     }
     if (_isNoteMode && _note.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Write a short note about the work.')));
+          SnackBar(content: Text(l10n.timeErrNoteRequired)));
       return;
     }
     if (!_isNoteMode && _ticketKey == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('Pick a ticket, or choose the note option.')));
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.timeErrPickTicket)));
       return;
     }
     app.tracker
@@ -238,14 +250,15 @@ class _TimeScreenState extends State<TimeScreen> {
   }
 
   void _exportSummary(BuildContext context, AppState app) {
+    final l10n = AppLocalizations.of(context);
     final text = app.tracker.endOfDaySummary();
     Clipboard.setData(ClipboardData(text: text));
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-        title: const Text('End of Day Summary',
-            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+        shape: const RoundedRectangleBorder(borderRadius: AppRadius.br14),
+        title: Text(l10n.timeSummaryTitle,
+            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
         content: SingleChildScrollView(
           child: SelectableText(text,
               style: const TextStyle(fontFamily: 'monospace', fontSize: 12)),
@@ -253,7 +266,7 @@ class _TimeScreenState extends State<TimeScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Copied to clipboard ✓'),
+            child: Text(l10n.timeCopied),
           ),
         ],
       ),
@@ -262,12 +275,7 @@ class _TimeScreenState extends State<TimeScreen> {
 
   Widget _label(String s) => Padding(
         padding: const EdgeInsets.only(bottom: 8),
-        child: Text(s.toUpperCase(),
-            style: const TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                letterSpacing: 0.4,
-                color: AppColors.text3)),
+        child: Text(s.toUpperCase(), style: AppTypography.overline),
       );
 
   String _fmt(double h) =>

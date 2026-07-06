@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:triage/l10n/gen/app_localizations.dart';
 import 'package:triage/state/app_state.dart';
 import 'package:triage/models/settings.dart';
 import 'package:triage/theme/app_theme.dart';
@@ -11,6 +12,7 @@ class Sidebar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final app = context.watch<AppState>();
+    final l10n = AppLocalizations.of(context);
 
     return Container(
       width: 210,
@@ -21,20 +23,29 @@ class Sidebar extends StatelessWidget {
       child: ListView(
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
         children: [
-          _label('My / Team'),
-          _segmented(app),
+          _label(l10n.sidebarScopeLabel),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: AppSegmentedControl(
+              expanded: true,
+              options: [l10n.sidebarMyTickets, l10n.sidebarTeam],
+              selectedIndex: app.scope == ViewScope.mine ? 0 : 1,
+              onSelect: (i) =>
+                  app.setScope(i == 0 ? ViewScope.mine : ViewScope.team),
+            ),
+          ),
           const SizedBox(height: 8),
           if (app.scope == ViewScope.team) ...[
-            _label('Teammates'),
+            _label(l10n.sidebarTeammates),
             ...app.settings.team.map((m) => _personRow(context, app, m)),
             const _Divider(),
           ],
-          _label('Show statuses'),
+          _label(l10n.sidebarShowStatuses),
           ...AppColors.status.keys
               .where((s) => s != 'Needs Attention')
               .map((s) => _statusRow(context, app, s)),
           const _Divider(),
-          _label('Projects'),
+          _label(l10n.sidebarProjects),
           ...app.projectsWithCounts.entries.map((e) =>
               _projectRow(context, app, e.key, e.value.name, e.value.count)),
         ],
@@ -44,52 +55,8 @@ class Sidebar extends StatelessWidget {
 
   Widget _label(String s) => Padding(
         padding: const EdgeInsets.fromLTRB(8, 6, 8, 3),
-        child: Text(s.toUpperCase(),
-            style: const TextStyle(
-                fontSize: 10,
-                fontWeight: FontWeight.w600,
-                letterSpacing: 0.4,
-                color: AppColors.text3)),
+        child: Text(s.toUpperCase(), style: AppTypography.overlineSmall),
       );
-
-  Widget _segmented(AppState app) {
-    Widget opt(String label, ViewScope scope) {
-      final sel = app.scope == scope;
-      return Expanded(
-        child: GestureDetector(
-          onTap: () => app.setScope(scope),
-          child: Container(
-            margin: const EdgeInsets.all(2),
-            padding: const EdgeInsets.symmetric(vertical: 4),
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: sel ? Colors.white : Colors.transparent,
-              borderRadius: BorderRadius.circular(5),
-              boxShadow: sel
-                  ? [BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 2)]
-                  : null,
-            ),
-            child: Text(label,
-                style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w500,
-                    color: sel ? AppColors.text : AppColors.text2)),
-          ),
-        ),
-      );
-    }
-
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 8),
-      decoration: BoxDecoration(
-          color: Colors.black.withValues(alpha: 0.05),
-          borderRadius: BorderRadius.circular(7)),
-      child: Row(children: [
-        opt('My tickets', ViewScope.mine),
-        opt('Team', ViewScope.team),
-      ]),
-    );
-  }
 
   Widget _statusRow(BuildContext context, AppState app, String status) {
     final on = app.settings.visibleStatuses.contains(status);
@@ -150,7 +117,7 @@ class Sidebar extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
         decoration: BoxDecoration(
           color: active ? AppColors.accentSoft : Colors.transparent,
-          borderRadius: BorderRadius.circular(6),
+          borderRadius: AppRadius.br6,
         ),
         child: Row(
           children: [
@@ -190,7 +157,7 @@ class Sidebar extends StatelessWidget {
         height: 15,
         decoration: BoxDecoration(
           color: on ? AppColors.accent : Colors.transparent,
-          borderRadius: BorderRadius.circular(4),
+          borderRadius: AppRadius.br4,
           border: Border.all(
               color: on ? AppColors.accent : AppColors.text3, width: 1.5),
         ),

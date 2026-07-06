@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:triage/theme/app_theme.dart';
 
-/// Primary action button — blue, rounded, bold label.
-/// Disabled (onTap == null): 30% alpha + not-allowed cursor.
 class AppButton extends StatelessWidget {
   final String label;
   final VoidCallback? onTap;
@@ -21,7 +19,7 @@ class AppButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final btn = MouseRegion(
       cursor: _disabled
-          ? SystemMouseCursors.forbidden // 🚫 not-allowed
+          ? SystemMouseCursors.forbidden
           : SystemMouseCursors.click,
       child: GestureDetector(
         onTap: onTap,
@@ -32,13 +30,9 @@ class AppButton extends StatelessWidget {
             color: _disabled
                 ? AppColors.accent.withValues(alpha: 0.3)
                 : AppColors.accent,
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: AppRadius.br8,
           ),
-          child: Text(label,
-              style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 13)),
+          child: Text(label, style: AppTypography.buttonLabel),
         ),
       ),
     );
@@ -46,7 +40,6 @@ class AppButton extends StatelessWidget {
   }
 }
 
-/// Secondary button — light gray, used next to a primary action.
 class AppSecondaryButton extends StatelessWidget {
   final String label;
   final VoidCallback? onTap;
@@ -68,24 +61,21 @@ class AppSecondaryButton extends StatelessWidget {
           alignment: Alignment.center,
           decoration: BoxDecoration(
             color: _disabled
-                ? const Color(0xFFF0F0F2).withValues(alpha: 0.3)
-                : const Color(0xFFF0F0F2),
-            borderRadius: BorderRadius.circular(8),
+                ? AppColors.secondaryButtonBg.withValues(alpha: 0.3)
+                : AppColors.secondaryButtonBg,
+            borderRadius: AppRadius.br8,
           ),
           child: Text(label,
-              style: TextStyle(
-                  color: _disabled
-                      ? AppColors.text.withValues(alpha: 0.3)
-                      : AppColors.text,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600)),
+              style: _disabled
+                  ? AppTypography.buttonLabelSecondary.copyWith(
+                      color: AppColors.text.withValues(alpha: 0.3))
+                  : AppTypography.buttonLabelSecondary),
         ),
       ),
     );
   }
 }
 
-/// Small square toolbar icon button (settings, add, digest, ...).
 class AppIconButton extends StatelessWidget {
   final IconData icon;
   final String tooltip;
@@ -106,7 +96,7 @@ class AppIconButton extends StatelessWidget {
       message: tooltip,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(7),
+        borderRadius: AppRadius.br7,
         child: Container(
           width: 30,
           height: 30,
@@ -114,7 +104,7 @@ class AppIconButton extends StatelessWidget {
             color: highlighted
                 ? AppColors.accentSoft
                 : Colors.black.withValues(alpha: 0.05),
-            borderRadius: BorderRadius.circular(7),
+            borderRadius: AppRadius.br7,
           ),
           child: Icon(icon,
               size: 16,

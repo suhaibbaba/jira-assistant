@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:triage/l10n/gen/app_localizations.dart';
 import 'package:triage/state/app_state.dart';
 import 'package:triage/models/settings.dart';
 import 'package:triage/theme/app_theme.dart';
@@ -18,7 +19,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   void initState() {
     super.initState();
-    // Rebuild when text changes so the Add button enables/disables live.
     _name.addListener(() => setState(() {}));
     _email.addListener(() => setState(() {}));
   }
@@ -30,27 +30,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
     super.dispose();
   }
 
-  /// Small confirmation toast shown after any setting changes.
   void _toastSaved() {
+    final l10n = AppLocalizations.of(context);
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
-      ..showSnackBar(const SnackBar(
-        content: Text('Settings saved ✓'),
-        duration: Duration(milliseconds: 900),
+      ..showSnackBar(SnackBar(
+        content: Text(l10n.settingsSavedToast),
+        duration: const Duration(milliseconds: 900),
         behavior: SnackBarBehavior.floating,
         width: 220,
       ));
   }
 
-  /// Add is enabled only when both fields have content.
-  /// (Stricter option: replace the email check with
-  ///  RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+\$').hasMatch(_email.text.trim()))
   bool get _canAddMember =>
       _name.text.trim().isNotEmpty && _email.text.trim().isNotEmpty;
 
   @override
   Widget build(BuildContext context) {
     final app = context.watch<AppState>();
+    final l10n = AppLocalizations.of(context);
     final s = app.settings;
 
     return Scaffold(
@@ -59,64 +57,45 @@ class _SettingsScreenState extends State<SettingsScreen> {
         backgroundColor: AppColors.bgSidebar,
         elevation: 0,
         scrolledUnderElevation: 0,
-        title: const Text('Settings',
-            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+        title: Text(l10n.settingsTitle,
+            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
         shape: const Border(
             bottom: BorderSide(color: AppColors.separator, width: 0.5)),
       ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(20, 16, 20, 40),
         children: [
-          _label('Aging alerts — per status'),
+          _label(l10n.settingsSectionAging),
           _block(children: [
-            for (final r in s.agingRules) _agingRow(app, r),
+            for (final r in s.agingRules) _agingRow(app, l10n, r),
           ]),
-          _label('Team members'),
+          _label(l10n.settingsSectionTeam),
           _block(children: [
-            _addPersonRow(app),
+            _addPersonRow(app, l10n),
             for (final m in s.team) _personRow(app, m),
           ]),
-          _label('General'),
+          _label(l10n.settingsSectionGeneral),
           _block(children: [
             _stepperRow(
-                'Morning digest time', s.morningDigestTime, () {}, () {},
+                l10n.settingsMorningDigestTime, s.morningDigestTime, () {},
+                () {},
                 editable: false),
-            _segRow('Sync interval', ['5m', '15m', '30m'],
+            _segRow(
+                l10n.settingsSyncInterval,
+                [l10n.settingsSync5m, l10n.settingsSync15m, l10n.settingsSync30m],
                 _syncIndex(s.syncIntervalMinutes), (i) {
               s.syncIntervalMinutes = [5, 15, 30][i];
               app.saveSettings();
               _toastSaved();
             }),
-            _segRow('Aging counts', ['Business days', 'Calendar'],
+            _segRow(
+                l10n.settingsAgingCounts,
+                [l10n.settingsBusinessDays, l10n.settingsCalendarDays],
                 s.agingUsesBusinessDays ? 0 : 1, (i) {
               s.agingUsesBusinessDays = i == 0;
               app.saveSettings();
               _toastSaved();
             }),
-            _rowContainer(
-              child: Row(
-                children: [
-                  const Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Notifications', style: TextStyle(fontSize: 12)),
-                        Text(
-                            'If the test doesn\'t appear, allow the app in '
-                            'System Settings → Notifications',
-                            style: TextStyle(
-                                fontSize: 10, color: AppColors.text2)),
-                      ],
-                    ),
-                  ),
-                  AppButton(
-                    label: 'Send test',
-                    fullWidth: false,
-                    onTap: () => app.sendTestNotification(),
-                  ),
-                ],
-              ),
-            ),
           ]),
           const SizedBox(height: 20),
           Center(
@@ -124,13 +103,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
               onPressed: () async {
                 await app.signOut();
                 if (context.mounted) {
-                  // Settings is a pushed route — pop back to root so the
-                  // login screen (swapped in underneath) becomes visible.
                   Navigator.of(context).popUntil((r) => r.isFirst);
                 }
               },
-              child: const Text('Disconnect & erase all data',
-                  style: TextStyle(color: Color(0xFFDC2626))),
+              child: Text(l10n.settingsDisconnect,
+                  style: const TextStyle(color: AppColors.errorText)),
             ),
           ),
         ],
@@ -142,25 +119,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Widget _label(String s) => Padding(
         padding: const EdgeInsets.fromLTRB(2, 8, 2, 6),
-        child: Text(s.toUpperCase(),
-            style: const TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                letterSpacing: 0.4,
-                color: AppColors.text3)),
+        child: Text(s.toUpperCase(), style: AppTypography.overline),
       );
 
   Widget _block({required List<Widget> children}) => Container(
         margin: const EdgeInsets.only(bottom: 14),
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(10),
+          color: AppColors.surface,
+          borderRadius: AppRadius.br10,
           border: Border.all(color: AppColors.separator, width: 0.5),
         ),
         child: Column(children: children),
       );
 
-  Widget _agingRow(AppState app, StatusAgingRule r) {
+  Widget _agingRow(AppState app, AppLocalizations l10n, StatusAgingRule r) {
     return _rowContainer(
       child: Row(
         children: [
@@ -179,11 +151,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     style: const TextStyle(
                         fontSize: 12, fontWeight: FontWeight.w500)),
                 if (r.status == 'New')
-                  const Text('Untriaged — most urgent',
-                      style: TextStyle(fontSize: 10, color: AppColors.text2))
+                  Text(l10n.settingsAgingNewHint,
+                      style: const TextStyle(
+                          fontSize: 10, color: AppColors.text2))
                 else if (r.status == 'In Progress')
-                  const Text('Usually off — being worked',
-                      style: TextStyle(fontSize: 10, color: AppColors.text2)),
+                  Text(l10n.settingsAgingInProgressHint,
+                      style: const TextStyle(
+                          fontSize: 10, color: AppColors.text2)),
               ],
             ),
           ),
@@ -197,8 +171,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 _toastSaved();
               }),
           const SizedBox(width: 12),
-          _stepper(
-            r.alertEnabled ? '${r.thresholdDays}d' : '—',
+          AppStepper(
+            value: r.alertEnabled
+                ? l10n.settingsDaysShort(r.thresholdDays)
+                : l10n.commonEmDash,
             enabled: r.alertEnabled,
             onMinus: () {
               setState(
@@ -218,7 +194,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Widget _addPersonRow(AppState app) {
+  Widget _addPersonRow(AppState app, AppLocalizations l10n) {
     return _rowContainer(
       child: Row(
         children: [
@@ -226,23 +202,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
             child: TextField(
               controller: _name,
               style: const TextStyle(fontSize: 12),
-              decoration: const InputDecoration(
-                  hintText: 'Name', isDense: true, border: InputBorder.none),
+              decoration: InputDecoration(
+                  hintText: l10n.settingsNameHint,
+                  isDense: true,
+                  border: InputBorder.none),
             ),
           ),
           Expanded(
             child: TextField(
               controller: _email,
               style: const TextStyle(fontSize: 12),
-              decoration: const InputDecoration(
-                  hintText: 'email@company.com',
+              decoration: InputDecoration(
+                  hintText: l10n.settingsEmailHint,
                   isDense: true,
                   border: InputBorder.none),
             ),
           ),
           GestureDetector(
             onTap: !_canAddMember
-                ? null // disabled: 0.3 alpha + not-allowed cursor (AppButton)
+                ? null
                 : () {
                     if (_name.text.trim().isEmpty || _email.text.trim().isEmpty)
                       return;
@@ -258,8 +236,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ? AppColors.accent.withValues(alpha: 0.3)
                       : AppColors.accent,
                   borderRadius: BorderRadius.circular(6)),
-              child: const Text('+ Add',
-                  style: TextStyle(
+              child: Text(l10n.settingsAddMember,
+                  style: const TextStyle(
                       color: Colors.white,
                       fontSize: 11,
                       fontWeight: FontWeight.w600)),
@@ -310,9 +288,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return _rowContainer(
       child: Row(
         children: [
-          Text(label, style: const TextStyle(fontSize: 12)),
+          Text(label, style: AppTypography.rowLabel),
           const Spacer(),
-          _stepper(value, enabled: editable, onMinus: onMinus, onPlus: onPlus),
+          AppStepper(
+              value: value, enabled: editable, onMinus: onMinus, onPlus: onPlus),
         ],
       ),
     );
@@ -323,45 +302,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return _rowContainer(
       child: Row(
         children: [
-          Text(label, style: const TextStyle(fontSize: 12)),
+          Text(label, style: AppTypography.rowLabel),
           const Spacer(),
-          Container(
-            decoration: BoxDecoration(
-                color: Colors.black.withValues(alpha: 0.05),
-                borderRadius: BorderRadius.circular(7)),
-            padding: const EdgeInsets.all(2),
-            child: Row(
-              children: [
-                for (var i = 0; i < options.length; i++)
-                  GestureDetector(
-                    onTap: () => onSelect(i),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 11, vertical: 4),
-                      decoration: BoxDecoration(
-                        color:
-                            selected == i ? Colors.white : Colors.transparent,
-                        borderRadius: BorderRadius.circular(5),
-                        boxShadow: selected == i
-                            ? [
-                                BoxShadow(
-                                    color: Colors.black.withValues(alpha: 0.1),
-                                    blurRadius: 2)
-                              ]
-                            : null,
-                      ),
-                      child: Text(options[i],
-                          style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w500,
-                              color: selected == i
-                                  ? AppColors.text
-                                  : AppColors.text2)),
-                    ),
-                  ),
-              ],
-            ),
-          ),
+          AppSegmentedControl(
+              options: options, selectedIndex: selected, onSelect: onSelect),
         ],
       ),
     );
@@ -374,44 +318,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
               bottom: BorderSide(color: AppColors.separator, width: 0.5)),
         ),
         child: child,
-      );
-
-  Widget _stepper(String value,
-      {required bool enabled,
-      required VoidCallback onMinus,
-      required VoidCallback onPlus}) {
-    return Opacity(
-      opacity: enabled ? 1 : 0.4,
-      child: Container(
-        decoration: BoxDecoration(
-          border: Border.all(color: AppColors.separator),
-          borderRadius: BorderRadius.circular(6),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _stepBtn('−', enabled ? onMinus : null),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-              child: Text(value,
-                  style: const TextStyle(
-                      fontSize: 12, fontWeight: FontWeight.w600)),
-            ),
-            _stepBtn('+', enabled ? onPlus : null),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _stepBtn(String s, VoidCallback? onTap) => GestureDetector(
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-          color: Colors.black.withValues(alpha: 0.03),
-          child: Text(s,
-              style: const TextStyle(fontSize: 13, color: AppColors.text2)),
-        ),
       );
 
   String _initials(String name) {

@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:triage/theme/app_theme.dart';
 
-/// The green mini toggle used in the sidebar (projects, teammates)
-/// and in Settings (aging rules).
 class AppToggle extends StatelessWidget {
   final bool value;
   final ValueChanged<bool>? onChanged;
@@ -26,7 +24,7 @@ class AppToggle extends StatelessWidget {
         width: width,
         height: height,
         decoration: BoxDecoration(
-          color: value ? AppColors.priority['Low'] : Colors.black.withValues(alpha: 0.15),
+          color: value ? AppColors.success : Colors.black.withValues(alpha: 0.15),
           borderRadius: BorderRadius.circular(height / 2),
         ),
         child: AnimatedAlign(
@@ -40,7 +38,7 @@ class AppToggle extends StatelessWidget {
                 color: Colors.white,
                 shape: BoxShape.circle,
                 boxShadow: [
-                  BoxShadow(color: Color(0x33000000), blurRadius: 2),
+                  BoxShadow(color: AppColors.knobShadow, blurRadius: 2),
                 ]),
           ),
         ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
+import 'package:triage/l10n/gen/app_localizations.dart';
 import 'package:triage/state/app_state.dart';
 import 'package:triage/models/ticket.dart';
 import 'package:triage/theme/app_theme.dart';
@@ -14,6 +15,7 @@ class DigestScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final app = context.watch<AppState>();
+    final l10n = AppLocalizations.of(context);
     final aging = app.agingTickets;
     final newTickets = app.groupedByStatus['New'] ?? [];
 
@@ -25,10 +27,13 @@ class DigestScreen extends StatelessWidget {
         scrolledUnderElevation: 0,
         title: Row(
           children: [
-            const Text('☀️ Good morning',
-                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+            Text(l10n.digestTitle,
+                style:
+                    const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
             const SizedBox(width: 6),
-            Text('· ${DateFormat('EEE, MMM d').format(DateTime.now())}',
+            Text(
+                l10n.digestDateSeparator(
+                    DateFormat('EEE, MMM d').format(DateTime.now())),
                 style: const TextStyle(fontSize: 12, color: AppColors.text2)),
           ],
         ),
@@ -43,11 +48,11 @@ class DigestScreen extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
             decoration: BoxDecoration(
               gradient: const LinearGradient(
-                  colors: [Color(0xFFFF9500), Color(0xFFFFB340)]),
-              borderRadius: BorderRadius.circular(12),
+                  colors: [AppColors.warning, AppColors.warningGradientEnd]),
+              borderRadius: AppRadius.br12,
               boxShadow: [
                 BoxShadow(
-                    color: const Color(0xFFFF9500).withValues(alpha: 0.22),
+                    color: AppColors.warning.withValues(alpha: 0.22),
                     blurRadius: 14,
                     offset: const Offset(0, 4)),
               ],
@@ -60,14 +65,11 @@ class DigestScreen extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('${aging.length} tickets are aging',
+                      Text(l10n.digestAgingBanner(aging.length),
+                          style: AppTypography.bannerTitle),
+                      Text(l10n.digestAgingSubtitle,
                           style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 15,
-                              fontWeight: FontWeight.w700)),
-                      const Text('Past your threshold · oldest first',
-                          style:
-                              TextStyle(color: Colors.white70, fontSize: 12)),
+                              color: Colors.white70, fontSize: 12)),
                     ],
                   ),
                 ),
@@ -75,7 +77,8 @@ class DigestScreen extends StatelessWidget {
             ),
           ),
           if (aging.isNotEmpty) ...[
-            _sectionHeader('Aging — needs attention', aging.length, AppColors.aging),
+            _sectionHeader(l10n.digestSectionAging, aging.length,
+                AppColors.aging),
             for (final t in aging)
               TicketCard(
                 ticket: t,
@@ -87,7 +90,7 @@ class DigestScreen extends StatelessWidget {
             const SizedBox(height: 18),
           ],
           if (newTickets.isNotEmpty) ...[
-            _sectionHeader('New since yesterday', newTickets.length,
+            _sectionHeader(l10n.digestSectionNew, newTickets.length,
                 AppColors.statusColor('New')),
             for (final t in newTickets)
               TicketCard(
@@ -98,9 +101,8 @@ class DigestScreen extends StatelessWidget {
               ),
           ],
           const SizedBox(height: 12),
-          const Center(
-            child: Text('In Progress & Review never age — they’re being worked',
-                style: TextStyle(fontSize: 10, color: AppColors.text3)),
+          Center(
+            child: Text(l10n.digestFooter, style: AppTypography.caption),
           ),
         ],
       ),
