@@ -310,8 +310,6 @@ class _Board extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.fromLTRB(22, 18, 22, 24),
       children: [
-        if (app.newTicketCount > 0 && !app.newBannerDismissed)
-          _newBanner(app, l10n, app.newTicketCount),
         if (grouped['Needs Attention'] != null)
           _StatusSection(
             status: 'Needs Attention',
@@ -330,51 +328,6 @@ class _Board extends StatelessWidget {
       ],
     );
   }
-
-  Widget _newBanner(AppState app, AppLocalizations l10n, int count) =>
-      Container(
-        margin: const EdgeInsets.only(bottom: 18),
-        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-              colors: [AppColors.danger, AppColors.dangerGradientEnd]),
-          borderRadius: AppRadius.br12,
-          boxShadow: [
-            BoxShadow(
-                color: AppColors.danger.withValues(alpha: 0.25),
-                blurRadius: 14,
-                offset: const Offset(0, 4)),
-          ],
-        ),
-        child: Row(
-          children: [
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(l10n.boardNewTicketsBanner(count),
-                      style: AppTypography.bannerTitle),
-                ],
-              ),
-            ),
-            MouseRegion(
-              cursor: SystemMouseCursors.click,
-              child: GestureDetector(
-                onTap: app.dismissNewBanner,
-                child: Container(
-                  padding: const EdgeInsets.all(6),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.18),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(Icons.close, size: 14, color: Colors.white),
-                ),
-              ),
-            ),
-          ],
-        ),
-      );
 }
 
 class _StatusSection extends StatelessWidget {
