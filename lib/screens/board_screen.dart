@@ -22,13 +22,13 @@ class BoardScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppColors.bgContent,
       body: Column(
-        children: [
-          const _Toolbar(),
-          const _UpdateBar(),
-          const _ConnectionBar(),
+        children: const [
+          _Toolbar(),
+          _UpdateBar(),
+          _ConnectionBar(),
           Expanded(
             child: Row(
-              children: const [
+              children: [
                 Sidebar(),
                 Expanded(child: _Board()),
               ],
@@ -412,7 +412,7 @@ class _StatusSection extends StatelessWidget {
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               buildDefaultDragHandles: true,
-              onReorder: (oldIndex, newIndex) {
+              onReorderItem: (oldIndex, newIndex) {
                 final list = [...tickets];
                 if (newIndex > oldIndex) newIndex--;
                 final item = list.removeAt(oldIndex);

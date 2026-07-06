@@ -84,7 +84,7 @@ class _TimeScreenState extends State<TimeScreen> {
                   Expanded(
                     flex: 3,
                     child: DropdownButtonFormField<String>(
-                      value: _ticketKey,
+                      initialValue: _ticketKey,
                       isExpanded: true,
                       decoration: appInputDecoration(label: l10n.timeTicketLabel),
                       items: [
@@ -122,7 +122,7 @@ class _TimeScreenState extends State<TimeScreen> {
                   const SizedBox(height: 10),
                 ],
                 DropdownButtonFormField<WorkType>(
-                  value: _type,
+                  initialValue: _type,
                   isExpanded: true,
                   decoration: appInputDecoration(label: l10n.timeWorkTypeLabel),
                   items: [

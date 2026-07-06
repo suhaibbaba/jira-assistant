@@ -76,13 +76,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ]),
           _label(l10n.settingsSectionGeneral),
           _block(children: [
-            _stepperRow(
-                l10n.settingsMorningDigestTime, s.morningDigestTime, () {},
-                () {},
+            _stepperRow(l10n.settingsMorningDigestTime, s.morningDigestTime,
+                () {}, () {},
                 editable: false),
             _segRow(
                 l10n.settingsSyncInterval,
-                [l10n.settingsSync5m, l10n.settingsSync15m, l10n.settingsSync30m],
+                [
+                  l10n.settingsSync5m,
+                  l10n.settingsSync15m,
+                  l10n.settingsSync30m
+                ],
                 _syncIndex(s.syncIntervalMinutes), (i) {
               s.syncIntervalMinutes = [5, 15, 30][i];
               app.saveSettings();
@@ -152,8 +155,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         fontSize: 12, fontWeight: FontWeight.w500)),
                 if (r.status == 'New')
                   Text(l10n.settingsAgingNewHint,
-                      style: const TextStyle(
-                          fontSize: 10, color: AppColors.text2))
+                      style:
+                          const TextStyle(fontSize: 10, color: AppColors.text2))
                 else if (r.status == 'In Progress')
                   Text(l10n.settingsAgingInProgressHint,
                       style: const TextStyle(
@@ -222,8 +225,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
             onTap: !_canAddMember
                 ? null
                 : () {
-                    if (_name.text.trim().isEmpty || _email.text.trim().isEmpty)
+                    if (_name.text.trim().isEmpty ||
+                        _email.text.trim().isEmpty) {
                       return;
+                    }
+
                     app.addTeamMember(_name.text.trim(), _email.text.trim());
                     _name.clear();
                     _email.clear();
@@ -291,7 +297,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
           Text(label, style: AppTypography.rowLabel),
           const Spacer(),
           AppStepper(
-              value: value, enabled: editable, onMinus: onMinus, onPlus: onPlus),
+              value: value,
+              enabled: editable,
+              onMinus: onMinus,
+              onPlus: onPlus),
         ],
       ),
     );
