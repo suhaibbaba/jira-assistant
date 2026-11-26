@@ -241,5 +241,23 @@
       "version": { "type": "String" }
     }
   },
+  "updateDownloading": "Downloading v{version}…",
+  "@updateDownloading": {
+    "placeholders": {
+      "version": { "type": "String" }
+    }
+  },
+  "updateReady": "v{version} is ready — Restart to update",
+  "@updateReady": {
+    "placeholders": {
+      "version": { "type": "String" }
+    }
+  },
+  "updateInstalling": "Installing v{version}…",
+  "@updateInstalling": {
+    "placeholders": {
+      "version": { "type": "String" }
+    }
+  },
   "updateDismissTooltip": "Dismiss this version"
 }

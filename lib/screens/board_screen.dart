@@ -202,6 +202,19 @@ class _UpdateBar extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     final update = app.availableUpdate;
     if (update == null) return const SizedBox.shrink();
+    // Windows auto-installs once downloaded; macOS (or a failed Windows
+    // download) falls back to downloading the installer in the browser.
+    final String label;
+    if (app.isInstallingUpdate) {
+      label = l10n.updateInstalling(update.version);
+    } else if (app.isDownloadingUpdate) {
+      label = l10n.updateDownloading(update.version);
+    } else if (app.isUpdateReady) {
+      label = l10n.updateReady(update.version);
+    } else {
+      label = l10n.updateBanner(update.version);
+    }
+    final canClick = !app.isInstallingUpdate && !app.isDownloadingUpdate;
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
@@ -214,10 +227,10 @@ class _UpdateBar extends StatelessWidget {
         children: [
           Expanded(
             child: MouseRegion(
-              cursor: SystemMouseCursors.click,
+              cursor: canClick ? SystemMouseCursors.click : MouseCursor.defer,
               child: GestureDetector(
-                onTap: () => app.openUpdatePage(),
-                child: Text(l10n.updateBanner(update.version),
+                onTap: canClick ? () => app.installUpdate() : null,
+                child: Text(label,
                     style: const TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,

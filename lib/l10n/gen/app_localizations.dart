@@ -832,6 +832,24 @@ abstract class AppLocalizations {
   /// **'v{version} available — Download ↗'**
   String updateBanner(String version);
 
+  /// No description provided for @updateDownloading.
+  ///
+  /// In en, this message translates to:
+  /// **'Downloading v{version}…'**
+  String updateDownloading(String version);
+
+  /// No description provided for @updateReady.
+  ///
+  /// In en, this message translates to:
+  /// **'v{version} is ready — Restart to update'**
+  String updateReady(String version);
+
+  /// No description provided for @updateInstalling.
+  ///
+  /// In en, this message translates to:
+  /// **'Installing v{version}…'**
+  String updateInstalling(String version);
+
   /// No description provided for @updateDismissTooltip.
   ///
   /// In en, this message translates to:

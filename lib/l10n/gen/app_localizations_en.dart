@@ -426,5 +426,20 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String updateDownloading(String version) {
+    return 'Downloading v$version…';
+  }
+
+  @override
+  String updateReady(String version) {
+    return 'v$version is ready — Restart to update';
+  }
+
+  @override
+  String updateInstalling(String version) {
+    return 'Installing v$version…';
+  }
+
+  @override
   String get updateDismissTooltip => 'Dismiss this version';
 }

@@ -61,3 +61,5 @@ Name: "{autodesktop}\{#AppName}"; Filename: "{app}\{#AppExeName}"; Tasks: deskto
 
 [Run]
 Filename: "{app}\{#AppExeName}"; Description: "{cm:LaunchProgram,{#AppName}}"; Flags: nowait postinstall skipifsilent
+; In-app auto-update runs this installer with /VERYSILENT — relaunch the app.
+Filename: "{app}\{#AppExeName}"; Flags: nowait; Check: WizardSilent

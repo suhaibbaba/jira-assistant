@@ -39,6 +39,10 @@ class AppState extends ChangeNotifier {
   bool newBannerDismissed = false;
 
   UpdateInfo? availableUpdate;
+  String? _downloadedUpdatePath;
+  bool isInstallingUpdate = false;
+  bool isDownloadingUpdate = false;
+  Timer? _updateTimer;
 
   Timer? _pollTimer;
   Timer? _retryTimer;
@@ -74,26 +78,51 @@ class AppState extends ChangeNotifier {
   }
 
   Future<void> _checkForUpdate() async {
+    _updateTimer ??=
+        Timer.periodic(const Duration(hours: 6), (_) => _checkForUpdate());
+    if (isInstallingUpdate) return;
     final info = await _updates.checkForUpdate();
     if (info == null) return;
+    final isNew = availableUpdate?.version != info.version;
     availableUpdate = info;
+    if (isNew) _downloadedUpdatePath = null;
     notifyListeners();
+    if (UpdateService.canAutoInstall &&
+        info.assetUrl != null &&
+        _downloadedUpdatePath == null &&
+        !isDownloadingUpdate) {
+      isDownloadingUpdate = true;
+      notifyListeners();
+      _downloadedUpdatePath = await _updates.download(info);
+      isDownloadingUpdate = false;
+      notifyListeners();
+    }
   }
+
+  /// True once the Windows installer is downloaded and ready to run.
+  bool get isUpdateReady => _downloadedUpdatePath != null;
 
   Future<void> dismissUpdate() async {
     final info = availableUpdate;
     if (info == null) return;
     availableUpdate = null;
+    _downloadedUpdatePath = null;
     notifyListeners();
     await _updates.dismiss(info.version);
   }
 
-  Future<void> openUpdatePage() async {
+  /// Windows: installs the downloaded update and restarts the app.
+  /// macOS: downloads the new .dmg in the browser.
+  Future<void> installUpdate() async {
     final info = availableUpdate;
-    if (info == null) return;
-    final url = Uri.parse(info.htmlUrl);
-    if (await canLaunchUrl(url)) {
-      await launchUrl(url, mode: LaunchMode.externalApplication);
+    if (info == null || isInstallingUpdate) return;
+    isInstallingUpdate = true;
+    notifyListeners();
+    try {
+      await _updates.install(info, downloadedPath: _downloadedUpdatePath);
+    } finally {
+      isInstallingUpdate = false;
+      notifyListeners();
     }
   }
 
@@ -412,6 +441,7 @@ class AppState extends ChangeNotifier {
   @override
   void dispose() {
     _pollTimer?.cancel();
+    _updateTimer?.cancel();
     _retryTimer?.cancel();
     super.dispose();
   }
