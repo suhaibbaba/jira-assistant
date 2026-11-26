@@ -33,29 +33,32 @@ flutter doctor
 
 ---
 
-## Build the app
+## Easiest: let GitHub build both
+
+Bump `version:` in `pubspec.yaml` (and `AppInfo.appVersion`) and push to
+`main` — or push a tag like `v1.8.0`, or click **Run workflow** on the
+*Release* action. GitHub builds on real Mac and Windows machines and attaches
+these to the release:
+
+| File | What it is |
+|---|---|
+| `Xngage-vX.Y.Z-macos.dmg` | Mac installer — open it, drag the app to Applications |
+| `Xngage-vX.Y.Z-macos.zip` | The bare Mac `.app`, zipped |
+| `Xngage-vX.Y.Z-windows-setup.exe` | Windows installer — Start Menu entry, optional desktop icon, uninstaller |
+| `Xngage-vX.Y.Z-windows-portable.zip` | Unzip anywhere and run `triage.exe`, no install |
+
+## Build it yourself
 
 ### On a Mac
-Open Terminal in the `triage` folder and run:
 ```bash
 bash build_mac.sh
 ```
-You get:
-- `triage.app` — the application
-- `Triage-Installer.dmg` — double-click it, drag Triage to Applications. Done.
-
-From then on, Triage is in Launchpad / Applications like any Mac app.
+Puts the `.dmg` and `.zip` in `dist/`.
 
 ### On Windows
-Open the `triage` folder and **double-click `build_windows.bat`**
-(or run it in a terminal).
-You get:
-- `triage.exe` — the application
-- a `.msix` installer — double-click to install Triage.
-
-From then on, Triage is in the Start Menu like any Windows app.
-
----
+Also install **Inno Setup 6** (free): https://jrsoftware.org/isdl.php — then
+double-click `build_windows.bat`. Puts `Setup.exe` and the portable `.zip`
+in `dist\`.
 
 ## Important: build on the matching OS
 

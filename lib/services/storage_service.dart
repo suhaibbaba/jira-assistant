@@ -13,6 +13,10 @@ class StorageService {
 
   final _secure = const FlutterSecureStorage(
     aOptions: AndroidOptions(encryptedSharedPreferences: true),
+    // The login keychain works in an ad-hoc-signed (unpaid) build; the data
+    // protection keychain needs a provisioning profile, which release
+    // builds don't have.
+    mOptions: MacOsOptions(usesDataProtectionKeychain: false),
   );
 
   Future<void> saveToken(String token) => _secure.write(key: _kToken, value: token);

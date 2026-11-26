@@ -1,49 +1,52 @@
 #!/usr/bin/env bash
 # ============================================================
-#  Build Triage as a real Mac app (.app) and an installer (.dmg)
-#  Run this ONCE on a Mac. After that, the app installs like
-#  any other — no terminal, no modules needed to use it.
+#  Build the Mac app (.app) plus a .dmg installer and .zip
+#  into dist/. Same outputs as the GitHub Release workflow.
 # ============================================================
 set -e
+cd "$(dirname "$0")"
+
+VERSION=$(grep '^version:' pubspec.yaml | head -1 | awk '{print $2}' | cut -d'+' -f1)
+TAG="v$VERSION"
 
 echo "==> 1/4  Getting dependencies..."
 flutter pub get
 
 echo "==> 2/4  Building the macOS app (release)..."
-flutter build macos --release
+# Ad-hoc sign so the build works without an Apple provisioning profile.
+FLUTTER_XCODE_CODE_SIGN_IDENTITY=- \
+FLUTTER_XCODE_CODE_SIGN_STYLE=Manual \
+FLUTTER_XCODE_DEVELOPMENT_TEAM= \
+FLUTTER_XCODE_PROVISIONING_PROFILE_SPECIFIER= \
+  flutter build macos --release
 
-APP_PATH="build/macos/Build/Products/Release/triage.app"
+APP_PATH=$(ls -d build/macos/Build/Products/Release/*.app | head -1)
+APP_NAME=$(basename "$APP_PATH")
+rm -rf dist dmg-src && mkdir -p dist dmg-src
 
-echo "==> 3/4  App built at: $APP_PATH"
-echo "         You can already drag this into /Applications."
+echo "==> 3/4  Zipping $APP_NAME..."
+ditto -c -k --keepParent "$APP_PATH" "dist/Xngage-$TAG-macos.zip"
 
-echo "==> 4/4  Creating a .dmg installer..."
-# create-dmg makes the nice drag-to-Applications window.
+echo "==> 4/4  Creating the .dmg installer..."
 if ! command -v create-dmg >/dev/null 2>&1; then
-  echo "    create-dmg not found. Installing via Homebrew..."
   if command -v brew >/dev/null 2>&1; then
     brew install create-dmg
   else
-    echo "    Homebrew not installed. Skipping .dmg."
-    echo "    The .app above works fine — just drag it to Applications."
+    echo "    Homebrew not installed — skipping .dmg (the .zip is ready)."
     exit 0
   fi
 fi
-
-rm -f Triage-Installer.dmg
+cp -R "$APP_PATH" dmg-src/
 create-dmg \
-  --volname "Triage" \
+  --volname "Xngage" \
   --window-size 540 380 \
   --icon-size 96 \
-  --icon "triage.app" 140 180 \
+  --icon "$APP_NAME" 140 180 \
   --app-drop-link 400 180 \
-  "Triage-Installer.dmg" \
-  "$APP_PATH" || {
-    echo "    create-dmg had a hiccup, but your .app is ready at $APP_PATH"
-    exit 0
-  }
+  --no-internet-enable \
+  "dist/Xngage-$TAG-macos.dmg" dmg-src/ || [ $? -eq 2 ]
+rm -rf dmg-src
 
 echo ""
-echo "✅ Done!"
-echo "   • App:       $APP_PATH"
-echo "   • Installer: Triage-Installer.dmg  (double-click → drag to Applications)"
+echo "✅ Done — see dist/:"
+ls -1 dist

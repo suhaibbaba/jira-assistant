@@ -25,3 +25,6 @@ web/
 #   pubspec.lock   → pins exact dependency versions for reproducible builds
 #   test/          → tests belong in the repo
 .metadata
+# Release installers (build_mac.sh / build_windows.bat / CI)
+dist/
+dmg-src/

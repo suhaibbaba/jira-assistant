@@ -1,0 +1,172 @@
+# Builds macOS + Windows installers and attaches them to one GitHub Release.
+#
+# Release assets:
+#   Xngage-vX.Y.Z-macos.dmg            double-click → drag to Applications
+#   Xngage-vX.Y.Z-macos.zip            the bare .app (zipped)
+#   Xngage-vX.Y.Z-windows-setup.exe    double-click installer (Start Menu, uninstaller)
+#   Xngage-vX.Y.Z-windows-portable.zip unzip and run triage.exe, no install
+#
+# Triggers:
+#   1. Push a version tag:  git tag v1.7.0 && git push origin v1.7.0
+#   2. Push a pubspec.yaml version bump to main — the tag is created automatically.
+#   3. Manual "Run workflow" — releases the pubspec.yaml version if its tag doesn't exist.
+#
+# Keep pubspec.yaml, lib/config/app_info.dart and the tag in sync when releasing.
+#
+# NOTE: builds are unsigned. macOS: right-click → Open on first launch.
+# Windows: SmartScreen → "More info" → "Run anyway".
+name: Release
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'pubspec.yaml'
+    tags:
+      - 'v*'
+  workflow_dispatch: {}
+permissions:
+  contents: write
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  tag:
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.vars.outputs.tag }}
+      version: ${{ steps.vars.outputs.version }}
+      should_release: ${{ steps.vars.outputs.should_release }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Resolve tag / decide whether to release
+        id: vars
+        run: |
+          if [ "${{ github.ref_type }}" = "tag" ]; then
+            tag="${{ github.ref_name }}"
+            should_release=true
+          else
+            version=$(grep '^version:' pubspec.yaml | head -1 | awk '{print $2}' | cut -d'+' -f1)
+            tag="v$version"
+            if git rev-parse "$tag" >/dev/null 2>&1; then
+              echo "Tag $tag already exists — nothing new to release."
+              should_release=false
+            else
+              should_release=true
+              git config user.name "github-actions[bot]"
+              git config user.email "github-actions[bot]@users.noreply.github.com"
+              git tag "$tag"
+              git push origin "$tag"
+            fi
+          fi
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "version=${tag#v}" >> "$GITHUB_OUTPUT"
+          echo "should_release=$should_release" >> "$GITHUB_OUTPUT"
+
+  macos:
+    needs: tag
+    if: needs.tag.outputs.should_release == 'true'
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.tag.outputs.tag }}
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - run: flutter analyze --no-fatal-infos
+      - run: flutter test
+      - name: Build macOS (ad-hoc signed — no provisioning profile on CI)
+        env:
+          FLUTTER_XCODE_CODE_SIGN_IDENTITY: '-'
+          FLUTTER_XCODE_CODE_SIGN_STYLE: Manual
+          FLUTTER_XCODE_DEVELOPMENT_TEAM: ''
+          FLUTTER_XCODE_PROVISIONING_PROFILE_SPECIFIER: ''
+        run: flutter build macos --release
+      - name: Package .zip and .dmg
+        env:
+          TAG: ${{ needs.tag.outputs.tag }}
+        run: |
+          brew install create-dmg
+          APP_PATH=$(ls -d build/macos/Build/Products/Release/*.app | head -1)
+          APP_NAME=$(basename "$APP_PATH")
+          mkdir -p dist dmg-src
+          ditto -c -k --keepParent "$APP_PATH" "dist/Xngage-$TAG-macos.zip"
+          cp -R "$APP_PATH" dmg-src/
+          # create-dmg exits 2 when it can't set a custom icon layout on headless
+          # runners — the image is still valid, so only fail on other codes.
+          create-dmg \
+            --volname "Xngage" \
+            --window-size 540 380 \
+            --icon-size 96 \
+            --icon "$APP_NAME" 140 180 \
+            --app-drop-link 400 180 \
+            --no-internet-enable \
+            "dist/Xngage-$TAG-macos.dmg" dmg-src/ || [ $? -eq 2 ]
+          test -f "dist/Xngage-$TAG-macos.dmg"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos
+          path: dist/*
+
+  windows:
+    needs: tag
+    if: needs.tag.outputs.should_release == 'true'
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.tag.outputs.tag }}
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - run: flutter test
+      - run: flutter build windows --release
+      - name: Bundle the VC++ runtime next to the exe
+        # Makes the app start on PCs without the "Visual C++ Redistributable".
+        shell: pwsh
+        run: |
+          $rel = "build\windows\x64\runner\Release"
+          foreach ($dll in "msvcp140.dll","vcruntime140.dll","vcruntime140_1.dll") {
+            Copy-Item "$env:WINDIR\System32\$dll" $rel
+          }
+      - name: Build Setup.exe and portable zip
+        shell: pwsh
+        env:
+          TAG: ${{ needs.tag.outputs.tag }}
+          VERSION: ${{ needs.tag.outputs.version }}
+        run: |
+          $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path $iscc)) {
+            choco install innosetup -y --no-progress
+          }
+          New-Item -ItemType Directory -Force dist | Out-Null
+          & $iscc "/DAppVersion=$env:VERSION" windows\installer\triage.iss
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          Compress-Archive -Path "build\windows\x64\runner\Release\*" `
+            -DestinationPath "dist\Xngage-$env:TAG-windows-portable.zip"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows
+          path: dist/*
+
+  release:
+    needs: [tag, macos, windows]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - run: ls -la dist
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.tag.outputs.tag }}
+          files: dist/*
+          generate_release_notes: true
